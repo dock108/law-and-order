@@ -143,16 +143,6 @@ export default async function ClientDetailPage({ params }: RouteParams) {
                     </ol>
                 </nav>
 
-                {/* Back to Dashboard Button */}
-                <div className="mb-6">
-                    <Link href="/dashboard" className="inline-flex items-center px-4 py-2 !bg-blue-500 text-white text-sm font-medium rounded-md hover:!bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 shadow-sm" style={{ backgroundColor: '#3b82f6' }}>
-                        <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                        Back to Dashboard
-                    </Link>
-                </div>
-
                 {/* Client Details Heading Outside Card */}
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-serif font-bold text-slate-800">Client Information</h1>
