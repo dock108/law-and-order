@@ -8,6 +8,7 @@ import jsPDF from 'jspdf';
 import {
   generateDocumentFromTemplate,
   prepareTemplateData,
+  processMarkdownForPDF,
 } from '@/lib/templates';
 
 // Zod schema for validating the request body for client creation
@@ -74,13 +75,18 @@ export async function POST(request: Request) {
             const templateData = prepareTemplateData(newClient); // Use the newly created client data
             const generatedContent = await generateDocumentFromTemplate(templateName, templateData);
 
+            // Process Markdown to remove syntax characters
+            const { processedText } = processMarkdownForPDF(generatedContent);
+
             // Step 2b: Generate PDF
             const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
             const pageMargin = 15;
             const usableWidth = doc.internal.pageSize.getWidth() - pageMargin * 2;
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(11);
-            const lines = doc.splitTextToSize(generatedContent, usableWidth);
+            
+            // Use the processed text instead of raw Markdown
+            const lines = doc.splitTextToSize(processedText, usableWidth);
             let cursorY = pageMargin;
             lines.forEach((line: string) => {
               if (cursorY + 10 > doc.internal.pageSize.getHeight() - pageMargin) {
@@ -90,6 +96,7 @@ export async function POST(request: Request) {
               doc.text(line, pageMargin, cursorY);
               cursorY += 7;
             });
+            
             const pdfArrayBuffer = doc.output('arraybuffer');
 
             // Step 2c: Upload to Supabase

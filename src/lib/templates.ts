@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import Handlebars from 'handlebars';
+import { marked } from 'marked';
 
 /**
  * Loads and compiles a Handlebars template.
@@ -36,6 +37,82 @@ export async function generateDocumentFromTemplate(
       throw new Error(`Failed to generate document from template '${templateName}'.`);
     }
   }
+}
+
+/**
+ * Processes Markdown text to remove syntax characters and prepare it for PDF rendering
+ * @param markdownText The Markdown content to process
+ * @returns A structured representation of the text with formatting information
+ */
+export function processMarkdownForPDF(markdownText: string): { 
+  processedText: string
+} {
+  // Convert markdown to plain text by removing common markdown syntax
+  let processedText = markdownText;
+  
+  // Replace headings (# Heading) with proper text
+  processedText = processedText.replace(/^#{1,6}\s+(.+)$/gm, (match, heading) => {
+    // Add some extra spacing before headings (except for the first one)
+    return heading.toUpperCase();
+  });
+  
+  // Add extra space after horizontal rules
+  processedText = processedText.replace(/^---+$/gm, '\n\n');
+  
+  // Replace bold/italic markers
+  processedText = processedText.replace(/\*\*(.+?)\*\*/g, '$1'); // Bold
+  processedText = processedText.replace(/\*(.+?)\*/g, '$1');     // Italic
+  processedText = processedText.replace(/__(.+?)__/g, '$1');     // Bold
+  processedText = processedText.replace(/_(.+?)_/g, '$1');       // Italic
+  
+  // Replace bullet points
+  processedText = processedText.replace(/^\s*[-*+]\s+/gm, '• ');
+  
+  // Replace numbered lists - keep the numbers
+  processedText = processedText.replace(/^\s*(\d+)\.\s+/gm, '$1. ');
+  
+  // Replace blockquotes
+  processedText = processedText.replace(/^>\s+(.+)$/gm, '    $1');
+  
+  // Replace code blocks with regular text (removing backticks)
+  processedText = processedText.replace(/```[\s\S]+?```/g, (match) => {
+    return match.replace(/```/g, '').trim();
+  });
+  
+  // Replace inline code with regular text
+  processedText = processedText.replace(/`(.+?)`/g, '$1');
+  
+  // Remove link syntax but keep text
+  processedText = processedText.replace(/\[(.+?)\]\(.+?\)/g, '$1');
+  
+  // Handle tables
+  // This is a simplified approach - in a real app you might want to format them better
+  processedText = processedText.replace(/\|(.+?)\|/g, '$1');
+  processedText = processedText.replace(/^[\|\-\s]+$/gm, '');
+  
+  // Replace Handlebars placeholders temporarily to protect them
+  // const handlebarsPlaceholders: string[] = [];
+  // processedText = processedText.replace(/{{(.+?)}}/g, (match, content) => {
+  //   handlebarsPlaceholders.push(content.trim());
+  //   return `[[PLACEHOLDER_${handlebarsPlaceholders.length - 1}]]`;
+  // });
+  
+  // Add double spacing between paragraphs to improve readability
+  processedText = processedText.replace(/\n\n/g, '\n\n');
+  
+  // Remove extra spaces
+  processedText = processedText.replace(/[ \t]+\n/g, '\n');
+  processedText = processedText.replace(/\n{3,}/g, '\n\n');
+  
+  // Restore Handlebars placeholders
+  // handlebarsPlaceholders.forEach((content, index) => {
+  //   processedText = processedText.replace(
+  //     `[[PLACEHOLDER_${index}]]`,
+  //     `{{${content}}}`
+  //   );
+  // });
+  
+  return { processedText };
 }
 
 // --- Helper function for date formatting ---

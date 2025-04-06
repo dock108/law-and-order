@@ -47,4 +47,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added Resend environment variables (`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`) to `.env.local` requirements.
 - Created API route `POST /api/email/send` to:
   - Fetch specified document details (Prisma) and PDF content (Supabase).
-  - Send email via Resend with PDF as attachment. 
+  - Send email via Resend with PDF as attachment.
+
+### Added - 2025-04-07
+
+- Improved Markdown processing for PDF generation with the `processMarkdownForPDF` function in `src/lib/templates.ts`.
+- Enhanced PDF generation to properly handle Markdown formatting, including:
+  - Converting headings to uppercase text
+  - Removing Markdown syntax for bold and italic formatting
+  - Converting bullet points to bullet characters
+  - Preserving numbered lists
+  - Removing link syntax while keeping the text
+  - Properly handling blockquotes and code blocks
+  - Simplifying tables for PDF output
+  - Maintaining proper spacing between paragraphs
+- Updated document generation routes to use improved Markdown processing:
+  - `src/app/api/clients/[clientId]/documents/route.ts`
+  - `src/app/api/clients/route.ts`
+- Added comprehensive project documentation in the README.md 

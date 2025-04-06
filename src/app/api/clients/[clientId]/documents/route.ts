@@ -8,6 +8,7 @@ import jsPDF from 'jspdf';
 import {
   generateDocumentFromTemplate,
   prepareTemplateData,
+  processMarkdownForPDF,
 } from '@/lib/templates';
 
 interface RouteParams {
@@ -61,13 +62,18 @@ export async function POST(request: Request, { params }: RouteParams) {
       templateData
     );
 
+    // Process the Markdown content to remove syntax characters
+    const { processedText } = processMarkdownForPDF(generatedContent);
+
     // 3. Generate PDF
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
     const pageMargin = 15;
     const usableWidth = doc.internal.pageSize.getWidth() - pageMargin * 2;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
-    const lines = doc.splitTextToSize(generatedContent, usableWidth);
+    
+    // Use the processed text instead of raw Markdown
+    const lines = doc.splitTextToSize(processedText, usableWidth);
     let cursorY = pageMargin;
     lines.forEach((line: string) => {
       if (cursorY + 10 > doc.internal.pageSize.getHeight() - pageMargin) {
@@ -77,6 +83,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       doc.text(line, pageMargin, cursorY);
       cursorY += 7;
     });
+    
     const pdfArrayBuffer = doc.output('arraybuffer');
 
     // 4. Upload PDF to Supabase Storage
