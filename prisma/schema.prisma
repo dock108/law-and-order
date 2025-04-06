@@ -1,0 +1,41 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id                String    @id @default(uuid())
+  name              String
+  email             String    @unique
+  phone             String?
+  incidentDate      DateTime?
+  location          String?
+  injuryDetails     String?
+  medicalExpenses   Decimal? // Prisma recommends Decimal for monetary values
+  insuranceCompany  String?
+  lawyerNotes       String?
+  onboardedAt       DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  documents         Document[] // Relation to Document model
+}
+
+model Document {
+  id            String   @id @default(uuid())
+  clientId      String   // Foreign key
+  documentType  String   // e.g., Demand Letter, Representation Letter
+  fileUrl       String   // path or link to stored PDF
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  client        Client   @relation(fields: [clientId], references: [id]) // Relation to Client model
+
+  @@index([clientId]) // Add index for performance on foreign key
+} 
