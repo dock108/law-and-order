@@ -22,6 +22,7 @@ cd law-and-order
 
 ```bash
 npm install
+# This installs core dependencies including pdf-lib and jszip
 ```
 
 ## Step 3: Set Up Environment Variables
@@ -63,12 +64,17 @@ EMAIL_FROM_ADDRESS=your_sender_email@example.com
 Initialize the database with Prisma:
 
 ```bash
+# Initial migration
 npx prisma migrate dev --name init
+
+# Migration for tasks (run after adding Task model to schema)
+# Ensure DATABASE_URL is accessible (e.g., prefix with DATABASE_URL="...")
+npx prisma migrate dev --name add-tasks 
 ```
 
 This will:
 1. Create the SQLite database file (`prisma/dev.db`)
-2. Run the migration to create the necessary tables
+2. Run the migrations to create the necessary tables (`Client`, `Document`, `Task`)
 3. Generate the Prisma client
 
 ## Step 5: Set Up Supabase Storage
@@ -107,9 +113,10 @@ The application should now be running at [http://localhost:3000](http://localhos
 
 ## Troubleshooting
 
-- **Database Issues**: If you encounter database issues, try running `npx prisma migrate reset` to reset your database
+- **Database Issues**: If you encounter database issues, try running `npx prisma migrate reset` to reset your database. Ensure migrations (`init`, `add-tasks`, etc.) have been run successfully. Make sure `DATABASE_URL` is correctly set and accessible when running `prisma migrate` commands.
 - **Supabase Connection**: Verify your Supabase credentials and ensure the storage bucket has been created
-- **PDF Generation**: If PDFs aren't generating properly, check console logs for errors
+- **PDF Generation**: If PDFs aren't generating properly (including letterhead), check console logs for errors from `pdf-lib`. Verify the letterhead PDF exists at `src/assets/v1_Colacci-Letterhead.pdf`.
+- **Task Generation**: If tasks are not generating, check console logs from `POST /api/clients`. Verify task templates exist in `src/assets/task-templates/` and match the expected Markdown format. Check the `selectTaskTemplate` logic in `src/lib/tasks.ts`.
 - **Email Sending**: Make sure your Resend API key is valid and the sender email is configured correctly
 
 ## Next Steps

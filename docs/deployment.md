@@ -92,12 +92,11 @@ If you're using a different authentication method in production, update the `aut
 3. Run the Prisma migrations on your production database:
 
 ```bash
-# If using Prisma Cloud
-npx prisma migrate deploy
-
-# Or manually set the DATABASE_URL and run
+# Run all migrations needed for production
 DATABASE_URL=your_production_database_url npx prisma migrate deploy
 ```
+
+> **Note**: `prisma migrate deploy` applies all pending migrations. Ensure your production `DATABASE_URL` is set correctly in Vercel environment variables.
 
 ## Step 8: Create the Supabase Storage Bucket
 
@@ -149,9 +148,10 @@ If API routes fail:
 ### PDF Generation Issues
 
 If PDF generation doesn't work in production:
-- Check if all dependencies are properly installed
-- Ensure the functions aren't timing out (PDF generation can be resource-intensive)
-- Consider implementing caching for generated PDFs
+- Check if all dependencies (`pdf-lib`) are properly installed
+- Ensure the functions aren't timing out (PDF generation/manipulation can be resource-intensive)
+- Verify the letterhead PDF (`src/assets/v1_Colacci-Letterhead.pdf`) is included in the deployment and accessible.
+- Check Vercel Function logs for errors from `pdf-lib`.
 
 ### Storage Problems
 
@@ -159,6 +159,13 @@ If document storage fails:
 - Verify Supabase credentials
 - Check if the storage bucket exists and is properly configured
 - Ensure the service role key has the necessary permissions
+
+### Task Generation Issues
+
+If automatic tasks are not created:
+- Check Vercel Function logs for the `POST /api/clients` endpoint.
+- Ensure task template files in `src/assets/task-templates/` are included in the deployment.
+- Verify the logic for selecting and parsing templates in `src/lib/tasks.ts` is working correctly in the serverless environment.
 
 ## Best Practices for Production
 

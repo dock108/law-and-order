@@ -200,10 +200,10 @@ The processor also handles:
 
 After the Markdown is processed, the text is then used in the PDF generation process:
 
-1. A new PDF document is created using jsPDF
-2. The processed text is split into lines based on the available width
-3. Each line is rendered to the PDF document
-4. Pages are added as needed when content flows beyond page boundaries
+1. An existing letterhead PDF is loaded using `pdf-lib` (or a new document is created if no letterhead is used).
+2. The processed text is prepared for drawing (e.g., basic line splitting is performed).
+3. Each line is rendered onto the PDF page(s) using `pdf-lib`'s drawing functions.
+4. `pdf-lib` handles page creation/management if content overflows the available space on the letterhead or subsequent pages.
 
 ## Customizing the Markdown Processing
 
@@ -225,7 +225,7 @@ processedText = processedText.replace(/^#{1,6}\s+(.+)$/gm, (match, heading) => {
 
 ## Implementation Details
 
-The implementation uses regular expressions for text processing rather than a full Markdown parser. This approach was chosen for simplicity and better control over the output format. If more complex Markdown features need to be supported, consider integrating a full Markdown parser library.
+The implementation uses regular expressions for text processing rather than a full Markdown parser. This approach was chosen for simplicity and better control over the output format. The processed text is then handed off to `pdf-lib` for rendering onto the PDF.
 
 ## Future Improvements
 
@@ -240,6 +240,6 @@ Potential improvements to the Markdown processing could include:
 ## Related Files
 
 - `src/lib/templates.ts` - Contains the `processMarkdownForPDF` function
-- `src/app/api/clients/[clientId]/documents/route.ts` - Uses the processor for document generation
-- `src/app/api/clients/route.ts` - Uses the processor for automatic document generation
+- `src/app/api/clients/[clientId]/documents/route.ts` - Uses the processor and `pdf-lib` for document generation with letterhead.
+- `src/app/api/clients/route.ts` - Uses the processor and `pdf-lib` for automatic document generation with letterhead.
 - `src/templates/*.md` - Template files that contain Markdown content 

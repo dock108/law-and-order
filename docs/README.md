@@ -25,7 +25,8 @@ Law & Order is a Next.js application designed for law firms to automate client o
 - Prisma ORM
 - NextAuth.js for authentication
 - Supabase for storage
-- jsPDF for PDF generation
+- `pdf-lib` for PDF generation (replaced jsPDF)
+- `jszip` for ZIP packaging
 - OpenAI for document modifications
 - Resend for email delivery
 - Handlebars for template processing
@@ -35,7 +36,7 @@ Law & Order is a Next.js application designed for law firms to automate client o
 
 1. Set up environment variables
 2. Install dependencies with `npm install`
-3. Set up database with `npx prisma migrate dev --name init`
+3. Set up database with `npx prisma migrate dev --name init` (and subsequent migrations like `--name add-tasks`)
 4. Create Supabase storage bucket
 5. Run the development server with `npm run dev`
 
@@ -44,5 +45,6 @@ See the [Setup Guide](setup.md) for detailed instructions.
 ## Further Reading
 
 - [Main README](../README.md) - Project overview and basic information
+- [Task Management Guide](task-management.md) - How tasks are generated and managed (NEW)
 - [CHANGELOG](../CHANGELOG.md) - History of changes to the project
 - [MVP Documentation](../mvp.md) - Original MVP specification 

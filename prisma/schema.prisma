@@ -21,10 +21,16 @@ model Client {
   medicalExpenses   Decimal? // Prisma recommends Decimal for monetary values
   insuranceCompany  String?
   lawyerNotes       String?
+
+  // ✅ New fields clearly added for tailored task selection:
+  caseType          String // e.g., "MVA", "Fall", "Product Liability"
+  verbalQuality     String // e.g., "Good", "Bad", "Zero"
+
   onboardedAt       DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
   documents         Document[] // Relation to Document model
+  tasks             Task[]     // Relation to Task model
 }
 
 model Document {
@@ -38,4 +44,20 @@ model Document {
   client        Client   @relation(fields: [clientId], references: [id]) // Relation to Client model
 
   @@index([clientId]) // Add index for performance on foreign key
+}
+
+// Task Management Model
+model Task {
+  id            String   @id @default(uuid())
+  clientId      String   // Foreign key
+  description   String
+  dueDate       DateTime?
+  status        String   @default("Pending") // Pending, In Progress, Completed, Overdue
+  notes         String?  // Optional field for task-specific notes
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  client        Client   @relation(fields: [clientId], references: [id])
+
+  @@index([clientId]) // Index for faster task lookups by client
 } 

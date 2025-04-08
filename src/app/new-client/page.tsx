@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation'; // Import useRouter for redirection
+import Link from 'next/link'; // Import Link for Back button
 
 export default function NewClientPage() {
   const router = useRouter(); // Initialize router
@@ -15,13 +16,15 @@ export default function NewClientPage() {
     medicalExpenses: '', // Store as string initially for input control
     insuranceCompany: '',
     lawyerNotes: '',
+    caseType: '', // Default to empty, first option will be selected visually
+    verbalQuality: '', // Default to empty
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -37,8 +40,8 @@ export default function NewClientPage() {
     setSuccess(null);
 
     // Basic Validation
-    if (!formData.name || !formData.email) {
-      setError('Client Name and Email are required.');
+    if (!formData.name || !formData.email || !formData.caseType || !formData.verbalQuality) {
+      setError('Client Name, Email, Case Type, and Verbal Quality are required.');
       setIsLoading(false);
       return;
     }
@@ -60,22 +63,38 @@ export default function NewClientPage() {
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      // Parse the response as text first
+      const responseText = await response.text();
+      
+      // Try to parse as JSON if possible
+      let errorData;
+      try {
+        errorData = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        // If JSON parsing fails, use the raw text
+        errorData = { message: responseText };
       }
 
-      // Handle success
-      const result = await response.json();
+      if (!response.ok) {
+        // Handle different types of error responses
+        const errorMessage = 
+          errorData.error || 
+          errorData.message || 
+          errorData.details || 
+          `HTTP error! status: ${response.status}`;
+          
+        throw new Error(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage));
+      }
+
+      // Handle success - we've already parsed the response text
+      const result = responseText ? JSON.parse(responseText) : {};
       setSuccess('Client added successfully! Redirecting to dashboard...');
       console.log('Client created:', result);
-      // Optionally clear form
-      // setFormData({ name: '', email: '', ... });
 
       // Redirect to dashboard after a short delay
       setTimeout(() => {
         router.push('/dashboard');
-      }, 2000); // 2-second delay
+      }, 2000);
 
     } catch (err: any) {
       console.error('Failed to create client:', err);
@@ -87,7 +106,18 @@ export default function NewClientPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <h1 className="text-2xl font-semibold mb-6">Add New Client</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold">Add New Client</h1>
+        <Link 
+          href="/dashboard" 
+          className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded inline-flex items-center transition duration-150 ease-in-out"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Dashboard
+        </Link>
+      </div>
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
@@ -148,6 +178,49 @@ export default function NewClientPage() {
               value={formData.phone}
               onChange={handleChange}
             />
+          </div>
+        </div>
+
+        {/* Case Details */}
+        <h2 className="text-xl font-semibold mb-4 border-t pt-4 mt-6">Case Details</h2>
+        <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="caseType">
+              Case Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-white"
+              id="caseType"
+              name="caseType"
+              value={formData.caseType}
+              onChange={handleChange}
+              required
+            >
+              <option value="" disabled>Select Case Type</option>
+              <option value="MVA">Motor Vehicle Accident (MVA)</option>
+              <option value="Fall">Fall Incident</option>
+              <option value="Product Liability">Product Liability</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="verbalQuality">
+              Verbal Quality <span className="text-red-500">*</span>
+            </label>
+            <select
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-white"
+              id="verbalQuality"
+              name="verbalQuality"
+              value={formData.verbalQuality}
+              onChange={handleChange}
+              required
+            >
+              <option value="" disabled>Select Verbal Quality</option>
+              <option value="Good">Good Verbal</option>
+              <option value="Bad">Bad Verbal</option>
+              <option value="Zero">Zero Verbal</option>
+              <option value="N/A">N/A</option>
+            </select>
           </div>
         </div>
 
