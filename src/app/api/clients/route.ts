@@ -4,12 +4,15 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase';
-import jsPDF from 'jspdf';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import fs from 'fs/promises';
+import path from 'path';
 import {
   generateDocumentFromTemplate,
   prepareTemplateData,
   processMarkdownForPDF,
 } from '@/lib/templates';
+import { generateTasksForClient } from '@/lib/tasks';
 
 // Zod schema for validating the request body for client creation
 const clientSchema = z.object({
@@ -22,6 +25,8 @@ const clientSchema = z.object({
   medicalExpenses: z.number().optional().nullable(),
   insuranceCompany: z.string().optional().nullable(),
   lawyerNotes: z.string().optional().nullable(),
+  caseType: z.string().min(1, { message: 'Case Type is required' }),
+  verbalQuality: z.string().min(1, { message: 'Verbal Quality is required' }),
 });
 
 // Added Constants
@@ -60,10 +65,12 @@ export async function POST(request: Request) {
         medicalExpenses: clientData.medicalExpenses,
         insuranceCompany: clientData.insuranceCompany,
         lawyerNotes: clientData.lawyerNotes,
+        caseType: clientData.caseType,
+        verbalQuality: clientData.verbalQuality,
       },
     });
 
-    console.log(`Client ${newClient.id} created successfully. Proceeding to document generation.`);
+    console.log(`Client ${newClient.id} created successfully. Proceeding to document and task generation.`);
 
     // START: Auto-generate default documents
     const generatedDocsInfo = [];
@@ -78,26 +85,56 @@ export async function POST(request: Request) {
             // Process Markdown to remove syntax characters
             const { processedText } = processMarkdownForPDF(generatedContent);
 
-            // Step 2b: Generate PDF
-            const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-            const pageMargin = 15;
-            const usableWidth = doc.internal.pageSize.getWidth() - pageMargin * 2;
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(11);
+            // Step 2b: Load Letterhead and Generate PDF
+            const letterheadPath = path.resolve('./src/assets/v1_Colacci-Letterhead.pdf');
+            const letterheadBytes = await fs.readFile(letterheadPath);
+            const pdfDoc = await PDFDocument.load(letterheadBytes);
+            const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+            const pages = pdfDoc.getPages();
+            const firstPage = pages[0];
+            const { width, height } = firstPage.getSize();
+            const marginTop = 100, marginBottom = 50, marginLeft = 72, marginRight = 72;
+            const fontSize = 11, lineHeight = 15;
+            const usableWidth = width - marginLeft - marginRight;
+
+            // Basic text splitting (same as in the other route)
+            const approxCharsPerLine = Math.floor(usableWidth / (fontSize * 0.6)); 
+            const words = processedText.split(/\s+/);
+            const lines: string[] = [];
+            let currentLine = '';
+            for (const word of words) {
+                const testLine = currentLine ? `${currentLine} ${word}` : word;
+                if (testLine.length < approxCharsPerLine || currentLine === '') {
+                    currentLine = testLine;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            if (currentLine) lines.push(currentLine);
+
+            // Draw text
+            let cursorY = height - marginTop;
+            let currentPageIndex = 0;
+            let currentPage = pages[currentPageIndex];
+            for (const line of lines) {
+                if (cursorY < marginBottom) {
+                    currentPageIndex++;
+                    if (currentPageIndex < pages.length) {
+                        currentPage = pages[currentPageIndex];
+                        cursorY = currentPage.getSize().height - marginTop;
+                    } else {
+                        currentPage = pdfDoc.addPage([width, height]);
+                        cursorY = height - marginTop;
+                        pages.push(currentPage);
+                    }
+                }
+                currentPage.drawText(line, { x: marginLeft, y: cursorY, font: helveticaFont, size: fontSize, color: rgb(0, 0, 0) });
+                cursorY -= lineHeight;
+            }
             
-            // Use the processed text instead of raw Markdown
-            const lines = doc.splitTextToSize(processedText, usableWidth);
-            let cursorY = pageMargin;
-            lines.forEach((line: string) => {
-              if (cursorY + 10 > doc.internal.pageSize.getHeight() - pageMargin) {
-                doc.addPage();
-                cursorY = pageMargin;
-              }
-              doc.text(line, pageMargin, cursorY);
-              cursorY += 7;
-            });
-            
-            const pdfArrayBuffer = doc.output('arraybuffer');
+            const pdfBytes = await pdfDoc.save();
+            const pdfArrayBuffer = pdfBytes.buffer;
 
             // Step 2c: Upload to Supabase
             const timestamp = Date.now();
@@ -130,27 +167,70 @@ export async function POST(request: Request) {
     }
     // END: Auto-generate default documents
 
+    // START: Auto-generate default tasks
+    let generatedTasksInfo = { count: 0, error: null };
+    try {
+      // Pass relevant client data to the task generator
+      // This assumes clientData might have fields like caseType, verbalQuality needed by generateTasksForClient
+      // You might need to adjust clientData shape or add fields to Prisma model first
+      const clientInputDataForTasks = {
+          caseType: (clientData as any).caseType, // Example: Assuming these fields exist or will be added
+          verbalQuality: (clientData as any).verbalQuality
+          // Pass other relevant fields from clientData
+      };
+      
+      const tasksToCreate = await generateTasksForClient(newClient.id, clientInputDataForTasks);
+      
+      if (tasksToCreate.length > 0) {
+          const result = await prisma.task.createMany({
+              data: tasksToCreate,
+              skipDuplicates: true, // Optional: might prevent errors if run twice, but check if needed
+          });
+          console.log(`Successfully generated ${result.count} tasks for client ${newClient.id}.`);
+          generatedTasksInfo.count = result.count;
+      } else {
+          console.log(`No tasks generated for client ${newClient.id} based on selected template or template content.`);
+      }
+    } catch (taskError: any) {
+      console.error(`Failed to generate tasks for client ${newClient.id}:`, taskError);
+      generatedTasksInfo.error = taskError.message || 'Task generation failed';
+      // Decide if this error should cause the whole request to fail
+    }
+    // END: Auto-generate default tasks
 
-    // Return the newly created client object along with info about generated docs
+    // Return the newly created client object along with info about generated docs and tasks
     return NextResponse.json({
         ...newClient,
-        generatedDocuments: generatedDocsInfo // Include info about generated docs
+        generatedDocuments: generatedDocsInfo,
+        generatedTasks: generatedTasksInfo, // Include info about generated tasks
     }, { status: 201 }); // 201 Created
 
   } catch (error: any) {
-    console.error('Client creation or initial document generation failed:', error);
+    console.error('Client creation or subsequent generation failed:', error.message, error.stack);
 
-    // Check for specific Prisma errors (like unique constraint violation) that happened during client creation
+    // Check for specific Prisma errors (like unique constraint violation) during client creation
     if (error instanceof Error && (error as any).code === 'P2002' && (error as any).meta?.target?.includes('email')) {
-        return NextResponse.json({ error: 'Email address already in use.' }, { status: 409 }); // 409 Conflict
+      return NextResponse.json({ error: 'Email address already in use.' }, { status: 409 }); // 409 Conflict
     }
 
-    // If client creation succeeded but doc gen failed partially, we might still return 201
-    // but log the errors. If client creation itself failed, return 500.
-    // The current logic returns 500 for any failure after validation.
-    // Consider returning the client ID even if doc gen fails partially, with an error message.
+    // Determine if the error happened *after* client creation
+    let specificErrorMessage = 'Internal Server Error during client processing.';
+    if (error.message.includes('generateDocumentFromTemplate') || error.message.includes('processMarkdownForPDF') || error.message.includes('PDFDocument.load') || error.message.includes('fs.readFile')) {
+        specificErrorMessage = 'Failed during document generation.';
+    } else if (error.message.includes('supabaseAdmin.storage') || error.message.includes('upload failed')) {
+        specificErrorMessage = 'Failed to upload document to storage.';
+    } else if (error.message.includes('prisma.document.create')) {
+        specificErrorMessage = 'Failed to save document record to database.';
+    } else if (error.message.includes('generateTasksForClient') || error.message.includes('prisma.task.createMany')) {
+        specificErrorMessage = 'Failed during task generation or saving.';
+    }
 
-    return NextResponse.json({ error: 'Internal Server Error during client creation or document generation.' }, { status: 500 });
+    // If client was created but subsequent steps failed, maybe return 207 Multi-Status or similar?
+    // For now, returning 500 but with a more specific message.
+    return NextResponse.json({ 
+        error: specificErrorMessage,
+        details: error.message // Include the original error message for debugging
+    }, { status: 500 });
   }
 }
 
@@ -161,16 +241,57 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  try {
-    const clients = await prisma.client.findMany({
-      orderBy: {
-        onboardedAt: 'desc', // List newest clients first
-      },
-      // Select specific fields if needed to optimize payload size
-      // select: { id: true, name: true, email: true, onboardedAt: true }
-    });
+  // Check for query parameter to include tasks
+  const { searchParams } = new URL(request.url);
+  const includeTasks = searchParams.get('includeTasks') === 'true';
 
-    return NextResponse.json(clients);
+  try {
+    const findOptions: Parameters<typeof prisma.client.findMany>[0] = {
+        orderBy: {
+          onboardedAt: 'desc',
+        },
+    };
+
+    // If includeTasks is true, modify the options to include tasks
+    if (includeTasks) {
+        findOptions.include = {
+            tasks: {
+                orderBy: {
+                    // Order tasks, e.g., by due date (nulls last), then creation date
+                    dueDate: 'asc', 
+                },
+                // Optionally limit the number of tasks returned per client for dashboard performance
+                // take: 10, 
+            },
+        };
+        console.log("Fetching clients with included tasks...");
+    } else {
+        console.log("Fetching clients without tasks...");
+    }
+
+    const clients = await prisma.client.findMany(findOptions);
+
+    // Manually process the clients array to ensure Dates are strings
+    // This is crucial for proper serialization across boundaries
+    const serializableClients = clients.map(client => ({
+      ...client,
+      // Ensure Date objects are converted to ISO strings
+      onboardedAt: client.onboardedAt.toISOString(),
+      updatedAt: client.updatedAt.toISOString(), 
+      // If medicalExpenses (Decimal) was fetched, convert it:
+      // medicalExpenses: client.medicalExpenses?.toString(),
+      
+      // Process tasks if they were included
+      tasks: includeTasks && client.tasks ? client.tasks.map(task => ({
+          ...task,
+          // Ensure Date objects in tasks are converted to ISO strings
+          dueDate: task.dueDate?.toISOString() || null,
+          createdAt: task.createdAt.toISOString(),
+          updatedAt: task.updatedAt.toISOString(),
+      })) : [], // Return empty array if tasks weren't included or don't exist
+    }));
+
+    return NextResponse.json(serializableClients); // Return the processed array
 
   } catch (error) {
     console.error('Failed to fetch clients:', error);

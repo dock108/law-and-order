@@ -65,3 +65,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `src/app/api/clients/[clientId]/documents/route.ts`
   - `src/app/api/clients/route.ts`
 - Added comprehensive project documentation in the README.md 
+
+### Added - 2025-04-08 (Assumed Date)
+
+- Integrated PDF letterhead using `pdf-lib`:
+  - Replaced `jsPDF` with `pdf-lib` for PDF generation in document creation routes.
+  - Added logic to load a letterhead PDF (`src/assets/v1_Colacci-Letterhead.pdf`) and overlay generated Markdown content onto it.
+  - Included basic text wrapping and page handling within `pdf-lib`.
+- Added ZIP packaging feature:
+  - Installed `jszip` dependency.
+  - Created API route `POST /api/docs/zip` to bundle multiple documents.
+  - Route accepts `clientId` or `documentIds`, fetches PDFs from Supabase, and returns a ZIP archive.
+- Added Task Management system:
+  - Defined `Task` model in `prisma/schema.prisma` with relation to `Client`.
+  - Ran migration `add-tasks` to update the database.
+  - Created task template directory `src/assets/task-templates/`.
+  - Implemented task template parsing logic (Markdown format) in `src/lib/tasks.ts`.
+  - Integrated automatic task generation into the client creation API route (`POST /api/clients`).
+  - Updated client creation response to include info on generated tasks. 

@@ -4,6 +4,15 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import DocumentManager from '@/components/DocumentManager'; // We will create this next
+import TaskList from '@/components/TaskList'; // Import the TaskList component
+
+interface Task {
+  id: string;
+  description: string;
+  dueDate: string | null;
+  status: string;
+  createdAt: string;
+}
 
 interface ClientDetails {
     id: string;
@@ -15,7 +24,10 @@ interface ClientDetails {
     injuryDetails?: string | null;
     medicalExpenses?: number | null;
     insuranceCompany?: string | null;
-    // Add other relevant fields
+    caseType?: string; // Add fields from schema
+    verbalQuality?: string;
+    // Add tasks to the details
+    tasks?: Task[]; 
 }
 
 interface DocumentRecord {
@@ -30,9 +42,11 @@ interface RouteParams {
   params: { clientId: string };
 }
 
-// Helper function to fetch client details
-async function getClientDetails(clientId: string): Promise<ClientDetails | null> {
-    const apiUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/clients/${clientId}`;
+// Helper function to fetch client details - Updated to include tasks
+async function getClientDetailsWithTasks(clientId: string): Promise<ClientDetails | null> {
+    // Assume the API route /api/clients/[clientId] can include tasks
+    // If not, we might need a separate fetch or adjust the API route
+    const apiUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/clients/${clientId}?includeTasks=true`; 
     try {
         const response = await fetch(apiUrl, {
             method: 'GET',
@@ -41,12 +55,17 @@ async function getClientDetails(clientId: string): Promise<ClientDetails | null>
         });
         if (!response.ok) {
             if (response.status === 404) return null;
-            console.error(`Failed to fetch client ${clientId}: ${response.status}`);
-            throw new Error(`Failed to fetch client. Status: ${response.status}`);
+            console.error(`Failed to fetch client ${clientId} with tasks: ${response.status}`);
+            throw new Error(`Failed to fetch client with tasks. Status: ${response.status}`);
         }
-        return await response.json();
+        const clientData: ClientDetails = await response.json();
+        // Ensure tasks array exists, even if empty, to prevent errors downstream
+        if (!clientData.tasks) {
+            clientData.tasks = [];
+        }
+        return clientData;
     } catch (error) {
-        console.error(`Error fetching client ${clientId}:`, error);
+        console.error(`Error fetching client ${clientId} with tasks:`, error);
         return null; // Or re-throw
     }
 }
@@ -102,7 +121,9 @@ export default async function ClientDetailPage({ params }: RouteParams) {
     }
 
     const { clientId } = params;
-    const client = await getClientDetails(clientId);
+    // Fetch client details *with* tasks
+    const client = await getClientDetailsWithTasks(clientId);
+    // Fetch documents separately (remains the same)
     const initialDocuments = await getClientDocuments(clientId);
 
     if (!client) {
@@ -197,6 +218,20 @@ export default async function ClientDetailPage({ params }: RouteParams) {
                                 </div>
                             </div>
                             
+                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
+                                <h2 className="text-lg font-medium text-blue-900 mb-4 border-b pb-2 border-slate-200">Case Classification</h2>
+                                <div className="space-y-3">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-600">Case Type</p>
+                                        <p className="text-slate-900 font-medium">{client.caseType || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-600">Verbal Quality</p>
+                                        <p className="text-slate-900 font-medium">{client.verbalQuality || 'N/A'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             {client.injuryDetails && (
                                 <div className="mt-6 bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
                                     <h2 className="text-lg font-medium text-blue-900 mb-4 border-b pb-2 border-slate-200">Injury Details</h2>
@@ -206,6 +241,14 @@ export default async function ClientDetailPage({ params }: RouteParams) {
                                 </div>
                             )}
                         </div>
+                    </div>
+                </div>
+
+                {/* Tasks Section - NEW */}
+                <div className="mb-8 bg-white shadow-md rounded-lg border border-slate-200 overflow-hidden">
+                    <div className="p-6">
+                        <h2 className="text-xl font-semibold text-slate-800 mb-4">Tasks</h2>
+                        <TaskList initialTasks={client.tasks || []} clientId={clientId} />
                     </div>
                 </div>
 

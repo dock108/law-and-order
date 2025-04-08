@@ -6,8 +6,11 @@ A Next.js application for law firms to automate client onboarding, document gene
 
 - **Client Management**: Add and manage client information
 - **Document Generation**: Automatically generate legal documents from templates
+- **Letterhead Integration**: Overlay generated content onto a PDF letterhead
 - **Document Storage**: Store documents securely with Supabase
-- **PDF Generation**: Convert documents to PDF format
+- **PDF Generation**: Convert documents to PDF format using `pdf-lib`
+- **ZIP Packaging**: Download multiple documents as a ZIP archive
+- **Task Management**: Auto-generate client-specific tasks based on intake scenarios
 - **Email Integration**: Send generated documents via email
 - **AI Assistance**: Modify documents using AI (OpenAI GPT integration)
 
@@ -53,7 +56,8 @@ EMAIL_FROM_ADDRESS=your_sender_email@example.com
 4. **Set up the database**
 
 ```bash
-npx prisma migrate dev --name init
+npx prisma migrate dev --name init # Initial migration
+# Ensure subsequent migrations (like add-tasks) are run
 ```
 
 5. **Create Supabase storage bucket**
@@ -75,6 +79,10 @@ npm run dev
 
 Templates are stored in the `src/templates` directory as Markdown files with Handlebars syntax for variable interpolation.
 
+## Task Templates
+
+Task lists for automatic generation are stored in `src/assets/task-templates/` as Markdown files. The system selects a template based on client intake data (currently placeholder logic) and parses tasks formatted like `- Task description (due X days)`.
+
 ## Markdown Processing
 
 The application processes Markdown formatting when generating PDFs to ensure proper formatting:
@@ -87,11 +95,12 @@ The application processes Markdown formatting when generating PDFs to ensure pro
 
 ## API Routes
 
-- `/api/clients` - Client management
-- `/api/clients/[clientId]/documents` - Document management for a specific client
-- `/api/docs/generate` - Document generation from templates
+- `/api/clients` - Client management (including automatic task generation on POST)
+- `/api/clients/[clientId]/documents` - Document management and generation (with letterhead) for a specific client
+- `/api/docs/zip` - Download multiple documents as a ZIP archive
+- `/api/docs/generate` - (Potentially older route, main generation is in client routes)
 - `/api/docs/modify` - AI-assisted document modification
-- `/api/docs/pdf` - PDF generation
+- `/api/docs/pdf` - (Likely deprecated/replaced by `pdf-lib` logic in document routes)
 - `/api/documents/[documentId]/download` - Document download with signed URLs
 - `/api/email/send` - Email documents to recipients
 
@@ -101,7 +110,8 @@ The application processes Markdown formatting when generating PDFs to ensure pro
 - Prisma ORM
 - NextAuth.js for authentication
 - Supabase for storage
-- jsPDF for PDF generation
+- `pdf-lib` for PDF generation and manipulation
+- `jszip` for creating ZIP archives
 - OpenAI for document modifications
 - Resend for email delivery
 - Handlebars for template processing

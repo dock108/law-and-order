@@ -4,7 +4,9 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
 import { supabaseAdmin } from '@/lib/supabase'; // Use the admin client
 import { z } from 'zod';
-import jsPDF from 'jspdf';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'; // Import pdf-lib components
+import fs from 'fs/promises'; // Import fs/promises to read the letterhead
+import path from 'path'; // Import path for resolving file paths
 import {
   generateDocumentFromTemplate,
   prepareTemplateData,
@@ -65,28 +67,86 @@ export async function POST(request: Request, { params }: RouteParams) {
     // Process the Markdown content to remove syntax characters
     const { processedText } = processMarkdownForPDF(generatedContent);
 
-    // 3. Generate PDF
-    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-    const pageMargin = 15;
-    const usableWidth = doc.internal.pageSize.getWidth() - pageMargin * 2;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    
-    // Use the processed text instead of raw Markdown
-    const lines = doc.splitTextToSize(processedText, usableWidth);
-    let cursorY = pageMargin;
-    lines.forEach((line: string) => {
-      if (cursorY + 10 > doc.internal.pageSize.getHeight() - pageMargin) {
-        doc.addPage();
-        cursorY = pageMargin;
-      }
-      doc.text(line, pageMargin, cursorY);
-      cursorY += 7;
-    });
-    
-    const pdfArrayBuffer = doc.output('arraybuffer');
+    // 3. Load Letterhead and Prepare PDF
+    const letterheadPath = path.resolve('./src/assets/v1_Colacci-Letterhead.pdf');
+    const letterheadBytes = await fs.readFile(letterheadPath);
+    const pdfDoc = await PDFDocument.load(letterheadBytes);
+    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const pages = pdfDoc.getPages();
+    const firstPage = pages[0]; // Assume we draw on the first page initially
 
-    // 4. Upload PDF to Supabase Storage
+    const { width, height } = firstPage.getSize();
+
+    // --- Define Margins and Text Settings ---
+    // Adjust these values based on the letterhead layout
+    const marginTop = 100; // Increased top margin to avoid header
+    const marginBottom = 50;
+    const marginLeft = 72; // Approx 1 inch
+    const marginRight = 72;
+    const fontSize = 11;
+    const lineHeight = 15; // Adjust line spacing
+    const usableWidth = width - marginLeft - marginRight;
+
+    // --- Prepare Text Lines (Basic Splitting) ---
+    // pdf-lib doesn't have a built-in text wrapper like jsPDF.splitTextToSize.
+    // We need a more robust way to split lines based on font metrics for production.
+    // For this example, we'll use a simpler split based on characters per line (approximation).
+    // A more accurate approach would measure text width with the chosen font.
+    const approxCharsPerLine = Math.floor(usableWidth / (fontSize * 0.6)); // Rough estimate
+    const words = processedText.split(/\\s+/);
+    const lines: string[] = [];
+    let currentLine = '';
+    for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        // Very basic check, replace with proper text width measurement if needed
+        if (testLine.length < approxCharsPerLine || currentLine === '') {
+            currentLine = testLine;
+        } else {
+            lines.push(currentLine);
+            currentLine = word;
+        }
+    }
+    if (currentLine) {
+        lines.push(currentLine); // Add the last line
+    }
+
+    // --- Draw Text onto Pages ---
+    let cursorY = height - marginTop; // Start drawing from top margin
+    let currentPageIndex = 0;
+    let currentPage = pages[currentPageIndex];
+
+    for (const line of lines) {
+      // Check if we need to add a new page
+      if (cursorY < marginBottom) {
+          // Try to use subsequent pages from the letterhead template if they exist
+          currentPageIndex++;
+          if (currentPageIndex < pages.length) {
+              currentPage = pages[currentPageIndex];
+              // Reset cursor Y based on the potentially different height of the new page from template
+              cursorY = currentPage.getSize().height - marginTop; 
+          } else {
+              // If letterhead pages run out, add a new blank page
+              currentPage = pdfDoc.addPage([width, height]); // Use dimensions from the first page
+              cursorY = height - marginTop; // Reset Y for the new blank page
+              pages.push(currentPage); // Add to our tracked pages
+          }
+      }
+
+      currentPage.drawText(line, {
+        x: marginLeft,
+        y: cursorY,
+        font: helveticaFont,
+        size: fontSize,
+        color: rgb(0, 0, 0), // Black text
+      });
+      cursorY -= lineHeight; // Move cursor down
+    }
+    
+    // 4. Save the Modified PDF
+    const pdfBytes = await pdfDoc.save();
+    const pdfArrayBuffer = pdfBytes.buffer; // Convert Uint8Array to ArrayBuffer
+
+    // 5. Upload PDF to Supabase Storage
     // Generate a unique filename (e.g., using client ID, doc type, timestamp)
     const timestamp = Date.now();
     const sanitizedDocType = documentType.replace(/[^a-z0-9\-\_]/gi, '_');
@@ -112,7 +172,7 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     console.log('Supabase Upload Success:', uploadData);
 
-    // 5. Create Document Record in Prisma
+    // 6. Create Document Record in Prisma
     const newDocument = await prisma.document.create({
       data: {
         clientId: clientId,
@@ -122,7 +182,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       },
     });
 
-    // 6. Return Success Response
+    // 7. Return Success Response
     // We return the DB record, including the path. The frontend/client
     // will need to request a signed URL to actually access the file.
     return NextResponse.json(newDocument, { status: 201 });

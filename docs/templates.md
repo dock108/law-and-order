@@ -62,7 +62,7 @@ You can use all standard Markdown formatting in your templates:
 - **Links**: Use `[text](url)` for links
 - **Tables**: Use Markdown table syntax
 
-When documents are converted to PDF, the Markdown formatting is properly processed to create a well-formatted document.
+When documents are converted to PDF, the Markdown formatting is properly processed using the `processMarkdownForPDF` function, and the resulting text is rendered onto the PDF letterhead using `pdf-lib`.
 
 ## Using Templates
 
@@ -85,7 +85,17 @@ Users can also manually generate documents from templates for existing clients:
 
 ### Customizing Document Processing
 
-For advanced customization of how Markdown is processed for PDF generation, you can modify the `processMarkdownForPDF` function in `src/lib/templates.ts`.
+For advanced customization of how Markdown is processed for PDF generation, you can modify the `processMarkdownForPDF` function in `src/lib/templates.ts`. Changes to PDF layout (margins, fonts) should be made where `pdf-lib` is used (e.g., in the document generation API routes).
+
+## Task Templates
+
+In addition to document templates, the application uses **Task Templates** to automatically generate workflow tasks for new clients. 
+
+- **Location**: `src/assets/task-templates/`
+- **Format**: Markdown (`.md`)
+- **Purpose**: Define standard task lists for different intake scenarios.
+
+See the [Task Management Guide](task-management.md) for details on creating and using task templates.
 
 ## Example Templates
 

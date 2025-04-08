@@ -20,14 +20,32 @@ export async function GET(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: 'Invalid Client ID' }, { status: 400 });
   }
 
+  // Check for query parameter to include tasks
+  const { searchParams } = new URL(request.url);
+  const includeTasks = searchParams.get('includeTasks') === 'true';
+
   try {
-    const client = await prisma.client.findUnique({
+    const findOptions: Parameters<typeof prisma.client.findUnique>[0] = {
       where: {
         id: clientId,
       },
-      // Optionally include related documents
-      // include: { documents: true }
-    });
+    };
+
+    // Conditionally include tasks based on query param
+    if (includeTasks) {
+        findOptions.include = {
+            tasks: {
+                orderBy: {
+                    dueDate: 'asc',
+                },
+            },
+        };
+        console.log(`Fetching client ${clientId} WITH tasks...`);
+    } else {
+        console.log(`Fetching client ${clientId} without tasks...`);
+    }
+
+    const client = await prisma.client.findUnique(findOptions);
 
     if (!client) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 });
