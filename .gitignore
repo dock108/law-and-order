@@ -1,45 +1,70 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# Node.js & Dependencies
+# ----------------------
+node_modules/
 /node_modules
-/.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
+# Next.js specific
+# ----------------
+.next/
+out/
+build/
 next-env.d.ts
 
-# SQLite database
+# Environment variables
+# ---------------------
+# Ignore all .env files, but allow checking in templates if needed
+.env*
+!.env.example
+!.env.template
+
+# Database
+# --------
+# Ignore SQLite database files
 *.db
 *.db-journal
+
+# Prisma
+# ------
+# Optional: Ignore Prisma generated client if not checked in (depends on workflow)
+# node_modules/@prisma/client/
+
+# OS specific
+# -----------
+.DS_Store
+Thumbs.db
+
+# IDE & Editor specific
+# ---------------------
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Build & Test Artifacts
+# ----------------------
+coverage/
+*.tsbuildinfo
+
+# Vercel
+# ------
+.vercel
+
+# Misc
+# ----
+*.pem

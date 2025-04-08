@@ -6,6 +6,75 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added - 2025-04-09 (Assumed Date)
+
+- Added a general API route `src/app/api/tasks/route.ts` for listing (`GET`) and creating (`POST`) tasks.
+- Added database seeding script (`scripts/seed-database.ts` and `scripts/seed.sh`) using `@faker-js/faker` to populate clients, tasks, and documents.
+- Added `seed:db` script to `package.json`.
+- Added `ts-node` and `@faker-js/faker` as dev dependencies.
+- Added `.env.local` for local environment configuration and removed `.env` (added `.env` to `.gitignore`).
+- Added basic `Letterhead` component (`src/components/Letterhead.tsx`).
+- Added layout files for `/dashboard`, `/clients`, and `/new-client` routes.
+- Added "Back to Dashboard" button on the `/new-client` page.
+- Added "Revert" button to completed tasks in the `TaskList` component, allowing status change back to "In Progress".
+
+### Changed - 2025-04-09 (Assumed Date)
+
+- Refactored task API structure: Removed dynamic `[taskId]` route in favor of the general `tasks/route.ts` for PATCH operations and the new route for GET/POST.
+- Updated `.gitignore` with more comprehensive rules for Node, Next.js, OS, IDEs, database, and environment files.
+- Updated `README.md` with detailed project structure, setup instructions (including absolute `DATABASE_URL`), tech stack, available scripts, and key concept explanations.
+- Integrated letterhead PDF directly into the `/dashboard` page using an `<iframe>` instead of a shared layout component.
+- Updated `TaskList` component to include the Revert button logic.
+
+### Fixed - 2025-04-09 (Assumed Date)
+
+- Resolved Prisma database path issues by using an absolute path in `DATABASE_URL` within `.env.local`.
+- Fixed issues running `npx prisma migrate dev` and `npm run seed:db` related to environment variables and database location.
+- Addressed `@faker-js/faker` deprecation warnings in the seed script.
+- Resolved module type conflicts (`type: module` vs CommonJS) preventing `ts-node` from running the seed script.
+- Fixed `headers().get()` usage in `/dashboard/page.tsx` by adding `await`.
+- Corrected the `Link` component structure for the "Add New Client" button on the dashboard page.
+- Fixed client creation API (`POST /api/clients`):
+  - Improved error handling in the frontend form (`/new-client/page.tsx`) to correctly parse and display API error messages.
+  - Enhanced the final `catch` block in the API route to return more specific error messages from document/task generation steps.
+  - Added missing `caseType` and `verbalQuality` fields to the Zod validation schema (`clientSchema`).
+  - Ensured `caseType` and `verbalQuality` are passed to the `prisma.client.create` call.
+
+### Added - 2025-04-08 (Assumed Date)
+
+- Integrated PDF letterhead using `pdf-lib`:
+  - Replaced `jsPDF` with `pdf-lib` for PDF generation in document creation routes.
+  - Added logic to load a letterhead PDF (`src/assets/v1_Colacci-Letterhead.pdf`) and overlay generated Markdown content onto it.
+  - Included basic text wrapping and page handling within `pdf-lib`.
+- Added ZIP packaging feature:
+  - Installed `jszip` dependency.
+  - Created API route `POST /api/docs/zip` to bundle multiple documents.
+  - Route accepts `clientId` or `documentIds`, fetches PDFs from Supabase, and returns a ZIP archive.
+- Added Task Management system:
+  - Defined `Task` model in `prisma/schema.prisma` with relation to `Client`.
+  - Ran migration `add-tasks` to update the database.
+  - Created task template directory `src/assets/task-templates/`.
+  - Implemented task template parsing logic (Markdown format) in `src/lib/tasks.ts`.
+  - Integrated automatic task generation into the client creation API route (`POST /api/clients`).
+  - Updated client creation response to include info on generated tasks.
+
+### Added - 2025-04-07
+
+- Improved Markdown processing for PDF generation with the `processMarkdownForPDF` function in `src/lib/templates.ts`.
+- Enhanced PDF generation to properly handle Markdown formatting, including:
+  - Converting headings to uppercase text
+  - Removing Markdown syntax for bold and italic formatting
+  - Converting bullet points to bullet characters
+  - Preserving numbered lists
+  - Removing link syntax while keeping the text
+  - Properly handling blockquotes and code blocks
+  - Simplifying tables for PDF output
+  - Maintaining proper spacing between paragraphs
+- Updated document generation routes to use improved Markdown processing:
+  - `src/app/api/clients/[clientId]/documents/route.ts`
+  - `src/app/api/clients/route.ts`
+- Added comprehensive project documentation in the README.md
+
 ### Added - 2025-04-06
 
 - Initialized project structure based on `implementation.md`.
@@ -47,39 +116,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added Resend environment variables (`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`) to `.env.local` requirements.
 - Created API route `POST /api/email/send` to:
   - Fetch specified document details (Prisma) and PDF content (Supabase).
-  - Send email via Resend with PDF as attachment.
-
-### Added - 2025-04-07
-
-- Improved Markdown processing for PDF generation with the `processMarkdownForPDF` function in `src/lib/templates.ts`.
-- Enhanced PDF generation to properly handle Markdown formatting, including:
-  - Converting headings to uppercase text
-  - Removing Markdown syntax for bold and italic formatting
-  - Converting bullet points to bullet characters
-  - Preserving numbered lists
-  - Removing link syntax while keeping the text
-  - Properly handling blockquotes and code blocks
-  - Simplifying tables for PDF output
-  - Maintaining proper spacing between paragraphs
-- Updated document generation routes to use improved Markdown processing:
-  - `src/app/api/clients/[clientId]/documents/route.ts`
-  - `src/app/api/clients/route.ts`
-- Added comprehensive project documentation in the README.md 
-
-### Added - 2025-04-08 (Assumed Date)
-
-- Integrated PDF letterhead using `pdf-lib`:
-  - Replaced `jsPDF` with `pdf-lib` for PDF generation in document creation routes.
-  - Added logic to load a letterhead PDF (`src/assets/v1_Colacci-Letterhead.pdf`) and overlay generated Markdown content onto it.
-  - Included basic text wrapping and page handling within `pdf-lib`.
-- Added ZIP packaging feature:
-  - Installed `jszip` dependency.
-  - Created API route `POST /api/docs/zip` to bundle multiple documents.
-  - Route accepts `clientId` or `documentIds`, fetches PDFs from Supabase, and returns a ZIP archive.
-- Added Task Management system:
-  - Defined `Task` model in `prisma/schema.prisma` with relation to `Client`.
-  - Ran migration `add-tasks` to update the database.
-  - Created task template directory `src/assets/task-templates/`.
-  - Implemented task template parsing logic (Markdown format) in `src/lib/tasks.ts`.
-  - Integrated automatic task generation into the client creation API route (`POST /api/clients`).
-  - Updated client creation response to include info on generated tasks. 
+  - Send email via Resend with PDF as attachment. 
