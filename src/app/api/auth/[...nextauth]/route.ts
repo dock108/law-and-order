@@ -10,7 +10,7 @@ import bcrypt from 'bcryptjs';
 const HASHED_PASSWORD = '$2b$10$Q/WdriKeHXKHgmgCR.0Tuuh3lsyu2UNVVipJzozmJB28C8SUxx26O'; // Replace with a real hash
 const USERNAME = 'lawyer';
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',
