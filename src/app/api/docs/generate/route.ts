@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { z } from 'zod';
 import {
   generateDocumentFromTemplate,
   prepareTemplateData,
 } from '@/lib/templates';
+import prisma from '@/lib/prisma';
 
 // Zod schema for validating the incoming request body
 // We expect a document type and a client data object
@@ -28,7 +28,7 @@ const generateRequestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

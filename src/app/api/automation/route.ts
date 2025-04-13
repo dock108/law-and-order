@@ -1,7 +1,6 @@
 import { generateAndStorePdf } from '@/lib/documents';
 import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { generateDocumentFromTemplate, prepareTemplateData } from '@/lib/templates';
@@ -135,8 +134,8 @@ async function getEvidenceChecklist(caseType: string | null, incidentDetails?: s
 export async function POST(request: NextRequest) {
     console.log("Received POST request on /api/automation");
 
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
+    const session = await getServerSession();
+    if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

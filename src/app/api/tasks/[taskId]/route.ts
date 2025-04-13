@@ -1,6 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 
@@ -16,7 +15,7 @@ const taskUpdateSchema = z.object({
 
 // PATCH /api/tasks/[taskId]
 export async function PATCH(request: Request, { params }: RouteParams) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -71,7 +70,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: { taskId: string } }) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -105,7 +104,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { taskI
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { taskId: string } }) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

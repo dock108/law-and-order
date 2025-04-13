@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+// import { authOptions } from '@/app/api/auth/[...nextauth]/route'; // Removed import
 import prisma from '@/lib/prisma';
 
 // Zod schema for validating the request body for task creation
@@ -15,7 +15,7 @@ import prisma from '@/lib/prisma';
 
 // GET /api/tasks - Get all tasks
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession(); // Removed authOptions
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/tasks - Create a new task
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession(); // Removed authOptions
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function PATCH(_request: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession(); // Removed authOptions
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

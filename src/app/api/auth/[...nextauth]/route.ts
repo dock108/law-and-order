@@ -84,7 +84,7 @@ const authOptions: NextAuthOptions = {
   // },
 };
 
-// Correctly type the handler parameters, even if req isn't used internally by NextAuth
-const handler = (_: NextRequest, res: NextResponse) => NextAuth(_, res, authOptions);
+// Correct App Router pattern
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST }; 

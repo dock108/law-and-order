@@ -1,6 +1,5 @@
 import React from 'react';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import Link from 'next/link';
@@ -111,7 +110,7 @@ function formatCurrency(amount: number | null | undefined): string {
 }
 
 export default async function ClientDetailPage({ params }: RouteParams) {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session) {
         redirect('/api/auth/signin');
     }
