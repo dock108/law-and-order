@@ -65,7 +65,7 @@ export async function PATCH(request: Request, { params }) {
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { taskId: string } }) {
+export async function DELETE(request: NextRequest, { params }) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

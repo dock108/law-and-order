@@ -229,7 +229,7 @@ export async function GET(request: NextRequest, { params }) {
 
 // Removed PUT as it wasn't fully implemented and caused errors
 /*
-export async function PUT(request: NextRequest, { params }: { params: { clientId: string } }) {
+export async function PUT(request: NextRequest, { params }) {
     // ... implementation ...
 }
 */ 
