@@ -2,12 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import prisma from '@/lib/prisma';
 
-interface RouteParams {
-  params: { clientId: string };
-}
-
 // 3. Retrieve Single Client (GET by ID)
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -59,7 +55,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 // 4. Client Update (PUT/PATCH - Placeholder)
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(request: NextRequest, { params }) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -78,7 +74,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 // 4. Client Delete (DELETE - Placeholder)
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, { params }) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
