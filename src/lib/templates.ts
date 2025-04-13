@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import Handlebars from 'handlebars';
 import { marked } from 'marked';
+import { NextResponse, NextRequest } from 'next/server';
 
 /**
  * Loads and compiles a Handlebars template.
@@ -28,14 +29,10 @@ export async function generateDocumentFromTemplate(
 
     return populatedContent;
 
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      console.error(`Template not found: ${templatePath}`);
-      throw new Error(`Template '${templateName}' not found.`);
-    } else {
-      console.error(`Error reading or compiling template ${templateName}:`, error);
-      throw new Error(`Failed to generate document from template '${templateName}'.`);
-    }
+  } catch (error: unknown) {
+    console.error(`Error reading or compiling template ${templateName}:`, error);
+    const message = error instanceof Error ? error.message : "Unknown template error";
+    throw new Error(`Failed to generate document from template '${templateName}': ${message}`);
   }
 }
 
@@ -116,7 +113,7 @@ export function processMarkdownForPDF(markdownText: string): {
 }
 
 // --- Helper function for date formatting ---
-function formatDate(date: Date | null | undefined): string {
+function formatDate(date: Date | string | null, format: string = 'yyyy-MM-dd'): string {
     if (!date) return '[Date Not Provided]';
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -146,4 +143,13 @@ export function prepareTemplateData(clientData: Record<string, any>): Record<str
         medicalExpensesFormatted: formatCurrency(clientData.medicalExpenses),
         // Add any other necessary formatted fields or derived data
     };
-} 
+}
+
+// Register Handlebars helpers
+Handlebars.registerHelper('date', (date: Date | string | null, options: any) => {
+    // ... helper body ...
+});
+
+Handlebars.registerHelper('formatCurrency', (value: number | null | undefined) => {
+    // ... helper body ...
+}); 

@@ -33,8 +33,8 @@ export default function NewClientPage() {
     }));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setIsLoading(true);
     setError(null);
     setSuccess(null);
@@ -96,9 +96,9 @@ export default function NewClientPage() {
         router.push('/dashboard');
       }, 2000);
 
-    } catch (err: any) {
-      console.error('Failed to create client:', err);
-      setError(err.message || 'An unexpected error occurred.');
+    } catch (error: unknown) {
+      console.error("Failed to create client:", error);
+      setError(error instanceof Error ? error.message : "An unknown error occurred");
     } finally {
       setIsLoading(false);
     }

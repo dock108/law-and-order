@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
@@ -9,6 +9,7 @@ import {
 } from '@/lib/templates';
 import { generateTasksForClient } from '@/lib/tasks';
 import { generateAndStorePdf } from '@/lib/documents';
+import { Prisma, Task } from '@prisma/client'; // Import Prisma namespace for types
 
 // Zod schema for validating the request body for client creation
 const clientSchema = z.object({
@@ -29,7 +30,7 @@ const clientSchema = z.object({
 const DEFAULT_ONBOARDING_TEMPLATES = ['demand-letter', 'representation-letter']; // Add more as needed
 
 // 1. Client Creation (POST)
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
     // END: Auto-generate default documents
 
     // START: Auto-generate default tasks
-    let generatedTasksInfo = { count: 0, error: null };
+    const generatedTasksInfo: { description: string; automationType: Task['automationType']; dueDate?: Date }[] = [];
     try {
       // Pass relevant client data to the task generator
       // This assumes clientData might have fields like caseType, verbalQuality needed by generateTasksForClient
@@ -132,8 +133,9 @@ export async function POST(request: Request) {
         generatedTasks: generatedTasksInfo, // Include info about generated tasks
     }, { status: 201 }); // 201 Created
 
-  } catch (error: any) {
-    console.error('Client creation or subsequent generation failed:', error.message, error.stack);
+  } catch (error: unknown) {
+    console.error('Client creation or subsequent generation failed:', error);
+    const message = error instanceof Error ? error.message : "An unknown error occurred";
 
     // Check for specific Prisma errors (like unique constraint violation) during client creation
     if (error instanceof Error && (error as any).code === 'P2002' && (error as any).meta?.target?.includes('email')) {
@@ -142,9 +144,9 @@ export async function POST(request: Request) {
 
     // Determine if the error happened *after* client creation
     let specificErrorMessage = 'Internal Server Error during client processing.';
-    if (error.message.includes('generateDocumentFromTemplate') || error.message.includes('generateAndStorePdf')) {
+    if (message.includes('generateDocumentFromTemplate') || message.includes('generateAndStorePdf')) {
         specificErrorMessage = 'Failed during document generation/storage.';
-    } else if (error.message.includes('generateTasksForClient') || error.message.includes('prisma.task.createMany')) {
+    } else if (message.includes('generateTasksForClient') || message.includes('prisma.task.createMany')) {
         specificErrorMessage = 'Failed during task generation or saving.';
     }
 
@@ -152,13 +154,13 @@ export async function POST(request: Request) {
     // For now, returning 500 but with a more specific message.
     return NextResponse.json({ 
         error: specificErrorMessage,
-        details: error.message // Include the original error message for debugging
+        details: message // Include the original error message for debugging
     }, { status: 500 });
   }
 }
 
 // 2. List All Clients (GET)
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -241,8 +243,9 @@ export async function GET(request: Request) {
 
     return NextResponse.json(serializableClients); // Return the processed array
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to fetch clients:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    const message = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ error: `Failed to fetch clients: ${message}` }, { status: 500 });
   }
 } 

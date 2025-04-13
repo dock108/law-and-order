@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import Image from 'next/image';
 
 // Define the structure of the task data passed to the modal
 interface Task {
@@ -79,11 +80,6 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
         }
     };
 
-    // Join suggestions array into a single markdown string if needed
-    const suggestionsMarkdown = Array.isArray(result?.suggestions) 
-        ? result.suggestions.join('\n') 
-        : typeof result?.suggestions === 'string' ? result.suggestions : null;
-
     return (
         // Increased backdrop blur and opacity
         <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-40 flex justify-center items-center p-4 transition-opacity duration-300">
@@ -147,9 +143,8 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
                                     <div className="border border-gray-300 rounded bg-white shadow-sm mt-1">
                                         {/* Simulated Header */}
                                         <div className="px-4 py-2 bg-white border-b border-gray-200">
-                                            {/* Use the actual letterhead image */}
-                                            <img src="/letterhead.png" alt="Law Firm Letterhead" className="w-full h-auto" />
-                                            {/* Remove placeholder text */}
+                                            {/* Use Next Image */}
+                                            <Image src="/letterhead.png" alt="Law Firm Letterhead" width={500} height={100} layout="responsive" objectFit="contain" />
                                         </div>
                                         
                                         {/* Email Content Area */} 
@@ -181,7 +176,7 @@ const AutomationModal: React.FC<AutomationModalProps> = ({
                                         <div className="border border-gray-300 rounded bg-white shadow-sm mt-1">
                                             {/* Simulated Header */} 
                                             <div className="px-4 py-2 bg-white border-b border-gray-200">
-                                                <img src="/letterhead.png" alt="Law Firm Letterhead" className="w-full h-auto" />
+                                                <Image src="/letterhead.png" alt="Law Firm Letterhead" width={500} height={100} layout="responsive" objectFit="contain" />
                                             </div>
                                             {/* Content Area */}
                                             <div className="mt-2 p-4 border rounded bg-white prose prose-sm max-w-none">

@@ -37,6 +37,18 @@ const automationRequestSchema = z.object({
     requiresDocs: z.boolean().optional().nullable(),
 });
 
+// Define a type for the payload for better type safety
+interface AutomationResponsePayload {
+    success: boolean;
+    message: string;
+    action: string; 
+    draft?: { to: string; subject: string; body: string };
+    suggestions?: string[];
+    mailtoLink?: string;
+    documentInfo?: { status: string; template: string; filePath?: string; documentId?: string };
+    generatedMarkdown?: string;
+}
+
 // --- OpenAI Helper Functions (Refined Prompts) ---
 
 async function getConsultSuggestions(clientContext: string): Promise<string[]> {
@@ -184,8 +196,10 @@ export async function POST(request: Request) {
         if (task.automationType !== automationType) return NextResponse.json({ error: 'Mismatched automation type for the task' }, { status: 400 });
 
         console.log(`Processing automation: ${automationType} for task ${taskId}...`);
-        let responsePayload: any = { success: true, message: 'Automation processed.', action: automationType };
-        let dbUpdates: Promise<any>[] = []; 
+        // Use const and the defined interface
+        const responsePayload: AutomationResponsePayload = { success: true, message: 'Automation processed.', action: automationType };
+        // Specify Prisma Promise type for the array
+        const dbUpdates: Prisma.PrismaPromise<any>[] = []; 
 
         // Inner try-catch for automation-specific logic errors
         try {
@@ -196,7 +210,8 @@ export async function POST(request: Request) {
                         let templateName = 'initial-consult-email';
                         let suggestions: string[] = [];
                         let subject = `Initial Consultation Request - ${client.name}`;
-                        let context = `Case Type: ${client.caseType}, Injury Details: ${client.injuryDetails ? client.injuryDetails.substring(0, 100) + '...' : 'N/A'}`;
+                        // Use const for context
+                        const context = `Case Type: ${client.caseType}, Injury Details: ${client.injuryDetails ? client.injuryDetails.substring(0, 100) + '...' : 'N/A'}`;
                         responsePayload.message = 'Initial consult email drafted and suggestions generated.';
 
                         if (automationConfig === 'witness_interview_prep') {
@@ -280,7 +295,8 @@ export async function POST(request: Request) {
                         if (resend) {
                             // --- Send via Resend ---
                             console.log(`Attempting to send email via Resend to ${client.email}`);
-                            const finalHtml = wrapWithHtmlLetterhead(bodyText);
+                            // Remove unused finalHtml variable
+                            // const finalHtml = wrapWithHtmlLetterhead(bodyText);
 
                             /*
                             // Temporarily disabled sending to only show draft
@@ -288,13 +304,10 @@ export async function POST(request: Request) {
                                 from: EMAIL_FROM_ADDRESS,
                                 to: client.email,
                                 subject: subject,
-                                html: finalHtml,
+                                // html: finalHtml, // Use bodyText or generate proper HTML if enabling
+                                html: wrapWithHtmlLetterhead(bodyText) // Or keep using the wrapper if needed elsewhere
                             });
-                            console.log("Resend response:", sendResponse);
-                            if (sendResponse.error) {
-                                throw new Error(`Resend error: ${sendResponse.error.message}`);
-                            }
-                            responsePayload.message = 'Email sent successfully via Resend.';
+                            // ... rest of commented out block ...
                             */
                             responsePayload.message = 'Email draft generated and ready for review (sending disabled).'; // Update message
 
@@ -422,19 +435,20 @@ export async function POST(request: Request) {
             }
             // --- End DB Updates ---
 
-        } catch (automationError: any) {
+        } catch (automationError: unknown) { // Use unknown for catch block error
             // ... (existing error handling for automation logic)
             console.error(`Error during ${automationType} automation execution:`, automationError);
-            return NextResponse.json({ error: `Failed to process automation: ${automationError.message}` }, { status: 500 });
+            const message = automationError instanceof Error ? automationError.message : 'Unknown automation error';
+            return NextResponse.json({ error: `Failed to process automation: ${message}` }, { status: 500 });
         }
 
         // ... (existing success response)
         console.log("Automation processed successfully, returning payload:", responsePayload);
         return NextResponse.json(responsePayload, { status: 200 });
 
-    } catch (error) {
+    } catch (error: unknown) { // Use unknown for catch block error
         // ... (existing broader error handling)
-        console.error(`Error processing automation request for task ${taskId}:`, error);
+        console.error(`Error processing automation request:`, error); // Removed taskId as it might not be defined here
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         return NextResponse.json({ error: `Internal server error processing automation request: ${errorMessage}` }, { status: 500 });
     }

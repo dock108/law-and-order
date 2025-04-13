@@ -73,9 +73,9 @@ export default function DocModifierPage() {
       } else {
         throw new Error('API did not return modified document content.');
       }
-    } catch (err: any) {
-      console.error('Modification request failed:', err);
-      setError(err.message || 'An unexpected error occurred.');
+    } catch (error: unknown) {
+      console.error("Modification error:", error);
+      setError(error instanceof Error ? error.message : "Failed to modify document");
     } finally {
       setIsLoading(false);
     }

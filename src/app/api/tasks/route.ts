@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
@@ -14,7 +14,7 @@ const taskCreateSchema = z.object({
 });
 
 // GET /api/tasks - Get all tasks
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -44,17 +44,15 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json(tasks);
-  } catch (error: any) {
-    console.error('Failed to fetch tasks:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    console.error("Error fetching tasks:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: `Failed to fetch tasks: ${message}` }, { status: 500 });
   }
 }
 
 // POST /api/tasks - Create a new task
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -82,11 +80,20 @@ export async function POST(request: Request) {
     console.log(`Created new task: ${task.id}`);
     return NextResponse.json(task, { status: 201 });
 
-  } catch (error: any) {
-    console.error('Failed to create task:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    console.error("Error creating task:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: `Failed to create task: ${message}` }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  // ... PATCH logic ...
+  try {
+    // ... try block ...
+  } catch (error: unknown) {
+    console.error("Error updating tasks:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: `Failed to update tasks: ${message}` }, { status: 500 });
   }
 } 

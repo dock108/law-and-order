@@ -1,6 +1,7 @@
+import { NextRequest, NextResponse } from 'next/server';
 import NextAuth, { type NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 // IMPORTANT: Store the hashed password securely, e.g., in environment variables or a database.
 // For this MVP, we'll hash the hardcoded password 'password123'.
@@ -83,6 +84,7 @@ export const authOptions: NextAuthOptions = {
   // },
 };
 
-const handler = NextAuth(authOptions);
+// Updated handler to satisfy ESLint (req is not used)
+const handler = (req: NextRequest, res: NextResponse) => NextAuth(req, res, authOptions);
 
 export { handler as GET, handler as POST }; 

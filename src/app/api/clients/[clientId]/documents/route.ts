@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
@@ -25,7 +25,7 @@ const createDocumentSchema = z.object({
 
 const BUCKET_NAME = 'generated-documents'; // Match your Supabase bucket name
 
-export async function POST(request: Request, { params }: RouteParams) {
+export async function POST(request: NextRequest, { params }: RouteParams) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -197,7 +197,7 @@ export async function POST(request: Request, { params }: RouteParams) {
 }
 
 // --- Add GET handler to list documents for a client ---
-export async function GET(request: Request, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
     const session = await getServerSession(authOptions);
     if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -228,4 +228,11 @@ export async function GET(request: Request, { params }: RouteParams) {
         console.error(`Failed to fetch documents for client ${clientId}:`, error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
-} 
+}
+
+// Removed PUT as it wasn't fully implemented and caused errors
+/*
+export async function PUT(request: NextRequest, { params }: { params: { clientId: string } }) {
+    // ... implementation ...
+}
+*/ 

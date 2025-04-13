@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import {
   generateDocumentFromTemplate,
   prepareTemplateData,
@@ -42,11 +42,21 @@ export async function GET(request: Request) {
       },
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Template generation failed:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: error.message || 'Failed to generate document' },
+      { error: `Failed to generate document: ${message}` },
       { status: 500 }
     );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  // ... POST logic ...
+  try {
+    // ... try block ...
+  } catch (error: unknown) {
+    // ... catch block ...
   }
 } 

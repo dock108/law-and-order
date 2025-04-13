@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers'; // Import headers to pass cookies
 import { Prisma } from '@prisma/client'; // Import Prisma types for Task
 import TaskList from '@/components/TaskList'; // Import the new client component
+import AddClientButton from '@/components/AddClientButton'; // Import the new button component
 
 // Define interfaces for stronger typing
 interface Task {
@@ -113,13 +114,14 @@ async function getClientsWithTasks(cookie: string): Promise<Client[]> {
   }
 }
 
+// Make the page component async
 export default async function DashboardPage() {
   // Perform session check at the top level if desired
-  // const session = await getServerSession(authOptions);
-  // if (!session) { redirect('/api/auth/signin'); }
+  const session = await getServerSession(authOptions);
+  if (!session) { redirect('/api/auth/signin'); }
 
   // Read cookie at the top level of the Server Component
-  const cookie = (await headers()).get('cookie') || '';
+  const cookie = headers().get('cookie') || '';
   
   // Fetch clients with tasks, passing the cookie
   const clients = await getClientsWithTasks(cookie);
@@ -138,12 +140,7 @@ export default async function DashboardPage() {
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Client Dashboard</h1>
-        <Link 
-          href="/new-client"
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out cursor-pointer shadow-md"
-        >
-          Add New Client
-        </Link>
+        <AddClientButton />
       </div>
 
       {/* Client List Table (Simplified - focus shifts to clients with tasks) */}

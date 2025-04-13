@@ -115,8 +115,23 @@ export async function generateAndStorePdf({
 
         return { filePath: uploadData.path, documentId: dbDoc.id };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error(`Error in generateAndStorePdf for type "${documentType}", client ${clientId}:`, error);
-        throw new Error(`Failed to generate and store PDF for ${documentType}. Reason: ${error.message}`);
+        throw new Error(`Failed to generate and store PDF for ${documentType}. Reason: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+}
+
+async function fetchClientData(clientId: string) {
+    // ... function body ...
+}
+
+async function generateAndSaveDocument(clientId: string, templateName: string) {
+    // ... function body ...
+    try {
+        // ... try block ...
+    } catch (error: unknown) {
+        console.error(`Error in generateAndSaveDocument for ${clientId}, ${templateName}:`, error);
+        // Decide if this should throw or return an error indicator
+        throw error; // Re-throw for now
     }
 } 
