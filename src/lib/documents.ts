@@ -1,6 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { PrismaClient } from '@prisma/client';
-import { generateDocumentFromTemplate, prepareTemplateData } from './templates';
 import { processMarkdownForPDF } from './templates';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import fs from 'fs/promises';
@@ -9,7 +8,6 @@ import prisma from '@/lib/prisma';
 
 const BUCKET_NAME = 'generated-documents';
 const LETTERHEAD_PATH = path.resolve('./src/assets/v1_Colacci-Letterhead.pdf');
-const prismaClient = new PrismaClient();
 
 interface GeneratePdfParams {
     markdownContent: string;
@@ -121,20 +119,5 @@ export async function generateAndStorePdf({
     } catch (error: unknown) {
         console.error(`Error in generateAndStorePdf for type "${documentType}", client ${clientId}:`, error);
         throw new Error(`Failed to generate and store PDF for ${documentType}. Reason: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-}
-
-async function fetchClientData(clientId: string) {
-    // ... function body ...
-}
-
-async function generateAndSaveDocument(clientId: string, templateName: string) {
-    // ... function body ...
-    try {
-        // ... try block ...
-    } catch (error: unknown) {
-        console.error(`Error in generateAndSaveDocument for ${clientId}, ${templateName}:`, error);
-        // Decide if this should throw or return an error indicator
-        throw error; // Re-throw for now
     }
 } 

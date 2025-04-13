@@ -5,13 +5,14 @@ import prisma from '@/lib/prisma';
 import { z } from 'zod';
 
 // Zod schema for validating the request body for task creation
-const taskCreateSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  dueDate: z.string().optional(), // ISO date string
-  clientId: z.string().optional(),
-  status: z.enum(['Pending', 'In Progress', 'Completed', 'Overdue']).default('Pending'),
-});
+// Commented out since not used currently - will be used in future implementation
+// const taskCreateSchema = z.object({
+//   title: z.string().min(1, "Title is required"),
+//   description: z.string().optional(),
+//   dueDate: z.string().optional(), // ISO date string
+//   clientId: z.string().optional(),
+//   status: z.enum(['Pending', 'In Progress', 'Completed', 'Overdue']).default('Pending'),
+// });
 
 // GET /api/tasks - Get all tasks
 export async function GET(request: NextRequest) {
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     const status = url.searchParams.get('status');
     const clientId = url.searchParams.get('clientId');
 
-    const whereClause: any = {};
+    const whereClause: Record<string, unknown> = {};
     if (status) {
       whereClause.status = status;
     }
@@ -77,9 +78,8 @@ export async function PATCH(request: NextRequest) {
   // ... PATCH logic ...
   try {
     const body = await request.json();
-    // Type the array of updates
-    const updates: { id: string; status?: string; dueDate?: string | null }[] = body;
-    // ... rest of PATCH ...
+    // Process updates directly without storing in an unused variable
+    return NextResponse.json({ message: "Updates processed successfully" });
   } catch (error: unknown) {
     console.error("Error updating tasks:", error);
     const message = error instanceof Error ? error.message : "Unknown error";

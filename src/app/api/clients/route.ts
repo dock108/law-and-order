@@ -11,9 +11,6 @@ import { generateTasksForClient } from '@/lib/tasks';
 import { generateAndStorePdf } from '@/lib/documents';
 import { Task } from '@prisma/client'; // Removed PrismaClient import
 
-// Define type for client data returned from validation
-type ClientData = z.infer<typeof clientSchema>;
-
 // Zod schema for validating the request body for client creation
 const clientSchema = z.object({
   name: z.string().min(1, { message: 'Name is required' }),
@@ -122,9 +119,9 @@ export async function POST(request: NextRequest) {
       } else {
           console.log(`No tasks generated for client ${newClient.id} based on selected template or template content.`);
       }
-    } catch (taskError: any) {
+    } catch (taskError: unknown) {
       console.error(`Failed to generate tasks for client ${newClient.id}:`, taskError);
-      generatedTasksInfo.error = taskError.message || 'Task generation failed';
+      generatedTasksInfo.error = taskError instanceof Error ? taskError.message : 'Task generation failed';
       // Decide if this error should cause the whole request to fail
     }
     // END: Auto-generate default tasks

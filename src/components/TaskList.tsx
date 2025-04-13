@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AutomationModal } from './AutomationModal'; // Use named import
 
 // Define Task interface matching the data structure from the server
@@ -28,7 +28,7 @@ const formatDate = (dateString: string | null): string => {
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString('en-US', { year: 'numeric', month: 'numeric', day: 'numeric' });
-    } catch (e) { return dateString; }
+    } catch (_) { return dateString; }
 };
 
 const getStatusStyles = (status: string): { badge: string; dropdownItem: string; } => {
@@ -47,14 +47,15 @@ const isTaskOverdue = (dueDateString: string | null, status: string): boolean =>
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return dueDate < today;
-    } catch (e) { return false; }
+    } catch (_) { return false; }
 };
 
 // Define possible status transitions for the dropdown/buttons
 const availableStatuses: Task['status'][] = ['Pending', 'In Progress', 'Completed'];
 
 export default function TaskList({ initialTasks, clientId, onTaskUpdate, onTaskDelete }: TaskListProps) {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  // We'll keep tasks state for future implementations though it's currently synced with props
+  const [tasks] = useState<Task[]>(initialTasks);
   const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
   const [openDropdownTaskId, setOpenDropdownTaskId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -62,7 +63,7 @@ export default function TaskList({ initialTasks, clientId, onTaskUpdate, onTaskD
   // --- State for Automation Modal ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [automationResult, setAutomationResult] = useState<any>(null);
+  const [automationResult, setAutomationResult] = useState<unknown>(null);
   const [automationError, setAutomationError] = useState<string | null>(null);
   const [isAutomating, setIsAutomating] = useState(false);
   // --- End State for Automation Modal ---
@@ -137,12 +138,6 @@ export default function TaskList({ initialTasks, clientId, onTaskUpdate, onTaskD
 
           console.log('Automation API call successful:', result);
           setAutomationResult(result); // Store the successful result
-          // Optional: Update task status locally or refetch tasks if needed
-          // e.g., if automation completes the task
-          // setTasks(current => current.map(t => t.id === task.id ? {...t, status: 'Completed'} : t));
-
-          // Keep the modal open to show the result briefly or provide next steps
-          // setIsModalOpen(false); // Close modal immediately (optional)
 
       } catch (error: unknown) {
           console.error('Error calling automation API:', error);
@@ -173,18 +168,11 @@ export default function TaskList({ initialTasks, clientId, onTaskUpdate, onTaskD
     // Prevent action if status update is loading
     if (loadingTaskId === task.id) return;
 
-    // --- Removed original placeholder alert logic --- 
-    // const descriptionLower = task.description.toLowerCase();
-    // if (descriptionLower.includes('consultation')) {
-    //     alert(`Action placeholder: Start initial consultation for task ${task.id}`);
-    // } else {
-    //     alert(`Action placeholder: Perform default action for task ${task.id}`);
-    // }
-    // --- End Removal ---
     console.log('No specific action defined for clicking this non-automated task.');
   };
 
-  const handleDeleteTask = async (taskId: string) => {
+  // Used for deletion functionality
+  const deleteTask = async (taskId: string) => {
     try {
       await onTaskDelete(taskId);
     } catch (error: unknown) {
@@ -235,8 +223,8 @@ export default function TaskList({ initialTasks, clientId, onTaskUpdate, onTaskD
                 {/* --- Automation Action Button --- */}
                 {task.automationType && (
                   <button 
-                    onClick={(e) => {
-                        e.stopPropagation(); // Prevent any parent onClick
+                    onClick={(_) => {
+                        _.stopPropagation(); // Prevent any parent onClick
                         handleOpenAutomationModal(task); // Open the modal
                     }}
                     // Added hover scale/brightness and cursor-pointer

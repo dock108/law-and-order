@@ -5,10 +5,9 @@ import { z } from 'zod';
 import jsPDF from 'jspdf';
 import * as pdfMake from 'pdfmake/build/pdfmake';
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
-import { marked } from 'marked';
 
 // Assign vfs to pdfMake
-(pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
+(pdfMake as unknown).vfs = pdfFonts.pdfMake.vfs;
 
 // Zod schema for validating the incoming request body
 const pdfRequestSchema = z.object({
@@ -34,13 +33,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let { content, filename } = validation.data;
+    const { content, filename: rawFilename } = validation.data;
 
     // Sanitize filename
-    filename = filename.replace(/[^a-z0-9\.\-\_]/gi, '_'); // Replace invalid chars
-    if (!filename.toLowerCase().endsWith('.pdf')) {
-        filename += '.pdf';
-    }
+    const filename = rawFilename.replace(/[^a-z0-9\.\-\_]/gi, '_') + 
+                    (!rawFilename.toLowerCase().endsWith('.pdf') ? '.pdf' : '');
 
     // Initialize jsPDF
     const doc = new jsPDF({

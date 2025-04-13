@@ -15,11 +15,28 @@ interface Task {
     status: string;
 }
 
+interface AutomationResult {
+    message?: string;
+    draft?: {
+        to: string;
+        subject: string;
+        body: string;
+    };
+    documentInfo?: {
+        status: string;
+        template: string;
+        filePath?: string;
+        documentId?: string;
+    };
+    generatedMarkdown?: string;
+    suggestions?: string[];
+    mailtoLink?: string;
+}
+
 interface AutomationModalProps {
     isOpen: boolean;
     onClose: () => void;
-    automationTask: any; // Specify a proper type for automationTask
-    onComplete: (result: any) => void; // Specify a proper type for result
+    automationTask: Task; // Changed from any to Task
 }
 
 // Helper function to generate a user-friendly description of the automation
@@ -50,19 +67,16 @@ const getAutomationDescription = (task: Task | null): string => {
     return details;
 };
 
-export const AutomationModal: React.FC<AutomationModalProps> = ({ isOpen, onClose, automationTask, onComplete }) => {
+export const AutomationModal: React.FC<AutomationModalProps> = ({ isOpen, onClose, automationTask }) => {
     const [isLoading, setIsLoading] = React.useState(false);
-    const [result, setResult] = React.useState<any>(null);
+    const [result, setResult] = React.useState<AutomationResult | null>(null);
     const [error, setError] = React.useState<string | null>(null);
-    const [currentContent, setCurrentContent] = React.useState<string | null>(null);
-    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
     React.useEffect(() => {
         if (isOpen) {
             setIsLoading(false);
             setResult(null);
             setError(null);
-            setCurrentContent(null);
         }
     }, [isOpen, automationTask]);
 

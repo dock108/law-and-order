@@ -131,7 +131,8 @@ function formatDate(dateInput: Date | string | null | undefined): string {
 }
 
 // --- Helper function for currency formatting ---
-function formatCurrency(valueInput: number | null | undefined): string {
+// Used in Handlebars helper registration below
+export function formatCurrency(valueInput: number | null | undefined): string {
     if (valueInput === null || valueInput === undefined) return '[Amount Not Provided]';
     try {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(valueInput);
@@ -171,10 +172,6 @@ Handlebars.registerHelper('date', (dateInput: Date | string | null | undefined) 
 });
 
 Handlebars.registerHelper('formatCurrency', (valueInput: number | null | undefined) => {
-    if (valueInput === null || valueInput === undefined) return '[Amount Not Provided]';
-    try {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(valueInput);
-    } catch {
-        return '[Invalid Amount]';
-    }
+    // Use the exported formatCurrency function
+    return formatCurrency(valueInput);
 }); 

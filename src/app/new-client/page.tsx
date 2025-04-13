@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation'; // Import useRouter for redirection
 import Link from 'next/link'; // Import Link for Back button
 
@@ -70,7 +70,7 @@ export default function NewClientPage() {
       let errorData;
       try {
         errorData = responseText ? JSON.parse(responseText) : {};
-      } catch (e) {
+      } catch (_) {
         // If JSON parsing fails, use the raw text
         errorData = { message: responseText };
       }

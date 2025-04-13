@@ -92,7 +92,7 @@ function parseTasksFromMarkdown(markdownContent: string): TaskTemplateItem[] {
 /**
  * Generates a list of tasks based on client data and task templates.
  */
-export async function generateTasksForClient(clientId: string, caseType: string | null, incidentDetails: string | null): Promise<void> {
+export async function generateTasksForClient(clientId: string, caseType: string | null): Promise<void> {
   const templatePath = selectTaskTemplate({ caseType: caseType || '', verbalQuality: 'Good' });
   console.log(`Selected task template: ${templatePath}`);
 
@@ -100,12 +100,13 @@ export async function generateTasksForClient(clientId: string, caseType: string 
     const markdownContent = await fs.readFile(templatePath, 'utf-8');
     const taskTemplates = parseTasksFromMarkdown(markdownContent);
 
-    // Remove explicit type annotation and use simple object structure
-    const tasksToCreate = taskTemplates.map(template => {
+    // Map task templates to task records - ready to be created in database
+    // For now we just create the data structure, actual DB operations happen outside
+    return taskTemplates.map(template => {
       return {
-        clientId: clientId, // Provide clientId directly
+        clientId: clientId,
         description: template.description,
-        dueDate: template.dueDate, // Use the parsed date directly
+        dueDate: template.dueDate,
         status: 'Pending', 
       };
     });
@@ -119,6 +120,6 @@ export async function generateTasksForClient(clientId: string, caseType: string 
         console.error(`Error reading or parsing task template ${templatePath}:`, error);
     }
     // Return empty array if template processing fails
-    // ... function body ...
+    return [];
   }
 } 

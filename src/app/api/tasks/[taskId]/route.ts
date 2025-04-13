@@ -61,7 +61,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   } catch (error: unknown) {
     // Handle potential errors, like task not found during update (P2025)
-    if (error instanceof Error && (error as any).code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
         return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
     console.error(`Failed to update task ${taskId}:`, error);
