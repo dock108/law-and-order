@@ -18,7 +18,7 @@ export const authOptions: NextAuthOptions = {
         username: { label: 'Username', type: 'text', placeholder: 'lawyer' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials, _req) {
+      async authorize(credentials) {
         // Basic validation
         if (!credentials?.username || !credentials?.password) {
           console.error('Missing username or password');

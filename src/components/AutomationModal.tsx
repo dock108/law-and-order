@@ -3,7 +3,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import Image from 'next/image';
-import { Modal, ModalProps } from './Modal';
 
 // Define the structure of the task data passed to the modal
 interface Task {
@@ -81,11 +80,41 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({ isOpen, onClos
     }, [isOpen, automationTask]);
 
     const handleConfirm = async () => {
-        // ... confirm logic ...
+        if (!automationTask) return;
+        
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            const response = await fetch('/api/automation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    taskId: automationTask.id,
+                    automationType: automationTask.automationType,
+                    automationConfig: automationTask.automationConfig,
+                }),
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to perform automation');
+            }
+            
+            const result = await response.json();
+            setResult(result);
+        } catch (error) {
+            setError(error instanceof Error ? error.message : 'An unknown error occurred');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleMarkTaskComplete = () => {
-        // ... mark task complete logic ...
+        if (!automationTask || !automationTask.id) return;
+        
+        // TODO: Implement task completion API call
+        console.log(`Marking task ${automationTask.id} as complete`);
     };
 
     if (!isOpen || !automationTask) return null;

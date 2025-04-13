@@ -28,7 +28,10 @@ const formatDate = (dateString: string | null): string => {
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString('en-US', { year: 'numeric', month: 'numeric', day: 'numeric' });
-    } catch (_) { return dateString; }
+    } catch {
+      // Just return the original string if parsing fails
+      return dateString;
+    }
 };
 
 const getStatusStyles = (status: string): { badge: string; dropdownItem: string; } => {
@@ -47,7 +50,10 @@ const isTaskOverdue = (dueDateString: string | null, status: string): boolean =>
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return dueDate < today;
-    } catch (_) { return false; }
+    } catch {
+      // Return false if date parsing fails
+      return false;
+    }
 };
 
 // Define possible status transitions for the dropdown/buttons
@@ -171,15 +177,15 @@ export default function TaskList({ initialTasks, clientId, onTaskUpdate, onTaskD
     console.log('No specific action defined for clicking this non-automated task.');
   };
 
-  // Used for deletion functionality
-  const deleteTask = async (taskId: string) => {
-    try {
-      await onTaskDelete(taskId);
-    } catch (error: unknown) {
-      console.error('Error calling task delete API:', error);
-      // TODO: Add user-facing error feedback
-    }
-  };
+  // Commented out for future implementation
+  // const deleteTask = async (taskId: string) => {
+  //   try {
+  //     await onTaskDelete(taskId);
+  //   } catch (error: unknown) {
+  //     console.error('Error calling task delete API:', error);
+  //     // TODO: Add user-facing error feedback
+  //   }
+  // };
 
   if (!tasks || tasks.length === 0) {
     return <p className="text-sm text-gray-500 italic">No tasks found for this client.</p>;
@@ -223,8 +229,8 @@ export default function TaskList({ initialTasks, clientId, onTaskUpdate, onTaskD
                 {/* --- Automation Action Button --- */}
                 {task.automationType && (
                   <button 
-                    onClick={(_) => {
-                        _.stopPropagation(); // Prevent any parent onClick
+                    onClick={(event) => {
+                        event.stopPropagation(); // Prevent any parent onClick
                         handleOpenAutomationModal(task); // Open the modal
                     }}
                     // Added hover scale/brightness and cursor-pointer
@@ -289,12 +295,7 @@ export default function TaskList({ initialTasks, clientId, onTaskUpdate, onTaskD
                 setIsModalOpen(false);
             }
         }}
-        onConfirm={handleAutomationStart}
-        task={selectedTask} 
-        isLoading={isAutomating}
-        result={automationResult}
-        error={automationError}
-        onMarkComplete={handleMarkComplete} 
+        automationTask={selectedTask || { id: '', description: '', status: '' }} 
       />
       {/* --- End Render Modal --- */}
     </>

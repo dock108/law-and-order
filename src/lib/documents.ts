@@ -1,5 +1,4 @@
 import { supabaseAdmin } from '@/lib/supabase';
-import { PrismaClient } from '@prisma/client';
 import { processMarkdownForPDF } from './templates';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import fs from 'fs/promises';
