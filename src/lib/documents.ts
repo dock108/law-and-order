@@ -1,4 +1,4 @@
-import { supabase } from 'lib/supabaseClient';
+import { supabaseAdmin } from '@/lib/supabase';
 import { PrismaClient } from '@prisma/client';
 import { generateDocumentFromTemplate, prepareTemplateData } from './templates';
 import { processMarkdownForPDF } from './templates';
@@ -91,11 +91,11 @@ export async function generateAndStorePdf({
         const sanitizedDocType = documentType.replace(/[^a-z0-9\-_.]/gi, '_');
         const filePath = `client_${clientId}/${sanitizedDocType}_${timestamp}.pdf`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
             .from(BUCKET_NAME)
             .upload(filePath, pdfBytes, {
                 contentType: 'application/pdf',
-                upsert: false, 
+                upsert: true,
             });
 
         if (uploadError) {

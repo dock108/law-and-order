@@ -51,7 +51,7 @@ export async function generateDocumentFromTemplate(
     return populatedContent;
 
   } catch (error: unknown) {
-    console.error(`Error reading or compiling template ${templateName}:`, error);
+      console.error(`Error reading or compiling template ${templateName}:`, error);
     const message = error instanceof Error ? error.message : "Unknown template error";
     throw new Error(`Failed to generate document from template '${templateName}': ${message}`);
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import AutomationModal from './AutomationModal'; // Import the modal component
+import { AutomationModal } from './AutomationModal'; // Use named import
 
 // Define Task interface matching the data structure from the server
 interface Task {
