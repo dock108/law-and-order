@@ -194,7 +194,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 }
 
 // --- Add GET handler to list documents for a client ---
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: { params: { clientId: string } }) {
     const session = await getServerSession();
     if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
