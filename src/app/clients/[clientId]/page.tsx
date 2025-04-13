@@ -30,10 +30,6 @@ interface ClientDetails extends Prisma.ClientGetPayload<{
 
 // Removed separate DocumentRecord interface
 
-interface RouteParams {
-  params: { clientId: string };
-}
-
 // Updated fetch function to include both tasks and documents
 async function getClientDetailsWithRelations(clientId: string, cookie: string): Promise<ClientDetails | null> {
     const apiUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/clients/${clientId}?includeTasks=true&includeDocuments=true`; 
@@ -82,14 +78,20 @@ function formatCurrency(amount: number | null | undefined): string {
     }).format(amount);
 }
 
-export default async function ClientDetailPage({ params }: RouteParams) {
+// Correct Page Component Props Type
+export default async function ClientDetailPage({ 
+    params 
+}: {
+    params: { clientId: string };
+    // searchParams?: { [key: string]: string | string[] | undefined }; // Optional searchParams type
+}) {
     const session = await getServerSession();
     if (!session) {
         redirect('/api/auth/signin');
     }
 
     const cookie = headers().get('cookie') || '';
-    const { clientId } = params;
+    const { clientId } = params; // Access clientId from the correctly typed params
     
     // Use the combined fetch function
     const client = await getClientDetailsWithRelations(clientId, cookie);
