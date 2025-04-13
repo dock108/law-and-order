@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import type { ComponentProps } from 'react'; // For typing Link props
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Reuse DocumentRecord interface (or import if defined centrally)
 interface DocumentRecord {
@@ -28,27 +28,13 @@ const formatDate = (dateString: string): string => {
   } catch { return dateString; }
 };
 
-export default function DocumentManager({ clientId, initialDocuments }: DocumentManagerProps) {
+export function DocumentManager({ clientId, initialDocuments = [] }: DocumentManagerProps) {
     const [documents, setDocuments] = useState<DocumentRecord[]>(initialDocuments);
-    const [isLoading, setIsLoading] = useState<Record<string, boolean>>({}); // Track loading state per action/doc
+    const [isLoading, setIsLoading] = useState<Record<string, boolean>>({});
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
     const availableTemplates = ['demand-letter', 'representation-letter']; // Example list
-
-    const fetchDocuments = async () => {
-        setIsLoading(prev => ({ ...prev, fetch: true }));
-        setError(null);
-        setSuccess(null);
-        try {
-            // ... function body ...
-        } catch (error: unknown) {
-            console.error("Error fetching documents:", error);
-            setError("Failed to load documents.");
-        } finally {
-            setIsLoading(prev => ({ ...prev, fetch: false }));
-        }
-    };
 
     // Function to generate a new document
     const handleGenerateDocument = async (documentType: string) => {
@@ -110,16 +96,6 @@ export default function DocumentManager({ clientId, initialDocuments }: Document
             .split('-')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
-    };
-
-    const handleDownloadZip = async () => {
-        // ... function body ...
-        try {
-            // ... try block ...
-        } catch (error: unknown) {
-            console.error("Error creating or downloading ZIP:", error);
-            setError("Failed to download documents as ZIP.");
-        }
     };
 
     return (

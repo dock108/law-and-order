@@ -187,12 +187,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // will need to request a signed URL to actually access the file.
     return NextResponse.json(newDocument, { status: 201 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to create and store document:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : 'Internal Server Error'
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -224,9 +222,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         // that takes the document ID or path and returns the signed URL.
         return NextResponse.json(documents);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error(`Failed to fetch documents for client ${clientId}:`, error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Internal Server Error'
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 

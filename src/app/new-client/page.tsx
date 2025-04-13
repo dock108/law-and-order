@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation'; // Import useRouter for redirection
 import Link from 'next/link'; // Import Link for Back button
 

@@ -102,4 +102,32 @@ export async function DELETE(request: NextRequest, { params }: { params: { taskI
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: `Failed to delete task: ${message}` }, { status: 500 });
   }
+}
+
+export async function PUT(request: NextRequest, { params }: { params: { taskId: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { taskId } = params;
+  if (!taskId) {
+    return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
+  }
+
+  try {
+    const body = await request.json();
+    // Explicitly type the update data (adjust fields as needed)
+    const updatedTaskData: Partial<Pick<Task, 'description' | 'dueDate' | 'status' | 'notes'>> = body;
+
+    const updatedTask = await prisma.task.update({
+      where: { id: taskId },
+      data: updatedTaskData,
+    });
+    return NextResponse.json(updatedTask);
+  } catch (error: unknown) {
+    console.error(`Failed to update task ${taskId}:`, error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: `Failed to update task: ${message}` }, { status: 500 });
+  }
 } 

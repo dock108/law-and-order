@@ -9,7 +9,7 @@ import {
 } from '@/lib/templates';
 import { generateTasksForClient } from '@/lib/tasks';
 import { generateAndStorePdf } from '@/lib/documents';
-import { Prisma, Task } from '@prisma/client'; // Import Prisma namespace for types
+import { PrismaClient, Task } from '@prisma/client'; // Removed Prisma namespace
 
 // Zod schema for validating the request body for client creation
 const clientSchema = z.object({
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid input', details: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const clientData = validation.data;
+    const clientData: Record<string, any> = validation.data;
 
     // Step 1: Use Prisma to create the client
     newClient = await prisma.client.create({
@@ -209,37 +209,18 @@ export async function GET(request: NextRequest) {
 
     // Manually process the clients array to ensure Dates are strings
     // The processing of tasks needs to be adjusted if using `select`
-    const serializableClients = clients.map(client => {
-        // Ensure client fields are serialized correctly
-        const serializedClientBase = {
-            ...client,
-            onboardedAt: client.onboardedAt.toISOString(),
-            updatedAt: client.updatedAt.toISOString(),
-        };
-        // Remove tasks if they exist due to `include` before re-adding selected fields
-        delete (serializedClientBase as any).tasks;
-
-        // Process tasks if they were included and selected
-        const serializedTasks = includeTasks && client.tasks ? client.tasks.map(task => ({
-            // Map only the selected fields
-            id: task.id,
-            description: task.description,
-            dueDate: task.dueDate?.toISOString() || null,
-            status: task.status,
-            createdAt: task.createdAt.toISOString(),
-            updatedAt: task.updatedAt.toISOString(),
-            notes: task.notes,
-            clientId: task.clientId,
-            automationType: task.automationType,
-            automationConfig: task.automationConfig,
-            requiresDocs: task.requiresDocs,
-        })) : [];
-
-        return {
-            ...serializedClientBase,
-            tasks: serializedTasks, // Add the correctly serialized tasks back
-        };
-    });
+    const serializableClients = clients.map(client => ({
+        ...client,
+        onboardedAt: client.onboardedAt.toISOString(),
+        incidentDate: client.incidentDate?.toISOString() ?? null,
+        // Explicitly handle other potentially non-serializable fields
+        tasks: client.tasks?.map(task => ({
+             ...task,
+             createdAt: task.createdAt.toISOString(),
+             updatedAt: task.updatedAt.toISOString(),
+             dueDate: task.dueDate?.toISOString() ?? null,
+        })) ?? [], 
+    }));
 
     return NextResponse.json(serializableClients); // Return the processed array
 

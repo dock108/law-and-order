@@ -7,7 +7,6 @@ import Link from 'next/link';
 import DocumentManager from '@/components/DocumentManager';
 import TaskList from '@/components/TaskList';
 import { Task } from '@prisma/client';
-import ClientInfoCard from '@/components/ClientInfoCard';
 
 interface Task {
   id: string;
@@ -97,7 +96,7 @@ function formatDate(dateString: string | null | undefined): string {
             month: 'long',
             day: 'numeric'
         });
-    } catch (e) {
+    } catch {
         return 'Invalid date';
     }
 }

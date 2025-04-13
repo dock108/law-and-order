@@ -3,12 +3,9 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { z } from 'zod';
 import jsPDF from 'jspdf';
-import { PrismaClient } from '@prisma/client';
 import * as pdfMake from 'pdfmake/build/pdfmake';
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
-import { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { marked } from 'marked';
-import { supabase } from '@/lib/supabaseClient';
 
 // Assign vfs to pdfMake
 (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;

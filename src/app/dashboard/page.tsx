@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers'; // Import headers to pass cookies
-import { Prisma } from '@prisma/client'; // Import Prisma types for Task
 import TaskList from '@/components/TaskList'; // Import the new client component
 import AddClientButton from '@/components/AddClientButton'; // Import the new button component
 
@@ -32,46 +31,15 @@ const formatDate = (dateString: string | null): string => {
   if (!dateString) return 'N/A';
   try {
     const date = new Date(dateString);
-    // Example: Short date format
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'numeric',
       day: 'numeric',
     });
-  } catch (e) {
-    console.error("Error parsing date:", dateString, e);
+  } catch {
+    console.error("Error parsing date:", dateString);
     return dateString; 
   }
-};
-
-// Function to determine styling for task status
-const getStatusBadge = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'completed':
-      return 'bg-green-100 text-green-800';
-    case 'overdue': // Assume overdue status might be set by a background job or check
-      return 'bg-red-100 text-red-800';
-    case 'in progress':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'pending':
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
-
-// Function to check if a task is overdue
-const isTaskOverdue = (dueDateString: string | null, status: string): boolean => {
-    if (!dueDateString || status.toLowerCase() === 'completed') {
-        return false;
-    }
-    try {
-        const dueDate = new Date(dueDateString);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Compare dates only
-        return dueDate < today;
-    } catch (e) {
-        return false;
-    }
 };
 
 // Updated function to fetch clients with their tasks

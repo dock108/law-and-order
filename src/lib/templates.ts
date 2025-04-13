@@ -1,8 +1,29 @@
 import fs from 'fs/promises';
 import path from 'path';
 import Handlebars from 'handlebars';
-import { marked } from 'marked';
-import { NextResponse, NextRequest } from 'next/server';
+
+interface ClientData { // Define or import a proper Client type
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    incidentDate?: Date | null;
+    location?: string | null;
+    // ... add other potential client fields used in templates
+}
+
+interface TemplateData extends Record<string, any> { // Base type
+    clientName?: string;
+    clientDobFormatted?: string;
+    clientAddress?: string;
+    firmName?: string;
+    firmAddress?: string;
+    firmPhone?: string;
+    firmFax?: string;
+    incidentDateFormatted?: string;
+    currentDateFormatted?: string;
+    location?: string;
+    // ... other fields ...
+}
 
 /**
  * Loads and compiles a Handlebars template.
@@ -13,7 +34,7 @@ import { NextResponse, NextRequest } from 'next/server';
  */
 export async function generateDocumentFromTemplate(
   templateName: string,
-  data: Record<string, any>
+  data: TemplateData
 ): Promise<string> {
   const templatesDir = path.join(process.cwd(), 'src', 'templates');
   const templatePath = path.join(templatesDir, `${templateName}.md`);
@@ -87,13 +108,6 @@ export function processMarkdownForPDF(markdownText: string): {
   processedText = processedText.replace(/\|(.+?)\|/g, '$1');
   processedText = processedText.replace(/^[\|\-\s]+$/gm, '');
   
-  // Replace Handlebars placeholders temporarily to protect them
-  // const handlebarsPlaceholders: string[] = [];
-  // processedText = processedText.replace(/{{(.+?)}}/g, (match, content) => {
-  //   handlebarsPlaceholders.push(content.trim());
-  //   return `[[PLACEHOLDER_${handlebarsPlaceholders.length - 1}]]`;
-  // });
-  
   // Add double spacing between paragraphs to improve readability
   processedText = processedText.replace(/\n\n/g, '\n\n');
   
@@ -101,55 +115,66 @@ export function processMarkdownForPDF(markdownText: string): {
   processedText = processedText.replace(/[ \t]+\n/g, '\n');
   processedText = processedText.replace(/\n{3,}/g, '\n\n');
   
-  // Restore Handlebars placeholders
-  // handlebarsPlaceholders.forEach((content, index) => {
-  //   processedText = processedText.replace(
-  //     `[[PLACEHOLDER_${index}]]`,
-  //     `{{${content}}}`
-  //   );
-  // });
-  
   return { processedText };
 }
 
 // --- Helper function for date formatting ---
-function formatDate(date: Date | string | null, format: string = 'yyyy-MM-dd'): string {
-    if (!date) return '[Date Not Provided]';
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+function formatDate(dateInput: Date | string | null | undefined): string {
+    if (!dateInput) return '[Date Not Provided]';
+    try {
+        const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+        // Consistent format
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }); 
+    } catch {
+        return '[Invalid Date]';
+    }
 }
 
 // --- Helper function for currency formatting ---
-function formatCurrency(amount: number | null | undefined): string {
-    if (amount === null || amount === undefined) return '[Amount Not Provided]';
-    return amount.toLocaleString('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    });
+function formatCurrency(valueInput: number | null | undefined): string {
+    if (valueInput === null || valueInput === undefined) return '[Amount Not Provided]';
+    try {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(valueInput);
+    } catch {
+        return '[Invalid Amount]';
+    }
 }
 
 // --- Prepare data specifically for Handlebars context ---
 // This function transforms raw client data into the shape needed by the template,
 // including formatted fields.
-export function prepareTemplateData(clientData: Record<string, any>): Record<string, any> {
+export function prepareTemplateData(client: Partial<ClientData>): TemplateData {
+    const firmDetails = { // Move firm details to env or config
+        firmName: process.env.NEXT_PUBLIC_FIRM_NAME || "Hynes & Colacci Law Firm",
+        firmAddress: process.env.NEXT_PUBLIC_FIRM_ADDRESS || "123 Law St, Anytown, USA",
+        firmPhone: process.env.NEXT_PUBLIC_FIRM_PHONE || "555-1234",
+        firmFax: process.env.NEXT_PUBLIC_FIRM_FAX || "555-5678",
+    };
+    
     return {
-        ...clientData, // Include all original client data
-        clientName: clientData.name, // Map 'name' to 'clientName' if needed by template
-        currentDate: formatDate(new Date()),
-        incidentDateFormatted: formatDate(clientData.incidentDate),
-        medicalExpensesFormatted: formatCurrency(clientData.medicalExpenses),
-        // Add any other necessary formatted fields or derived data
+        ...client, // Spread client data (be mindful of overwrites)
+        ...firmDetails,
+        clientName: client.name || '[Client Name Missing]',
+        incidentDateFormatted: formatDate(client.incidentDate), // Use helper
+        currentDateFormatted: formatDate(new Date()), // Format current date
+        location: client.location || '[Location Missing]', // Handle default here
+        // Add other necessary formatted fields or derived data
+        // clientDobFormatted: formatDate(client.dob), // Example
+        // clientAddress: client.address || '[Address Missing]',
     };
 }
 
 // Register Handlebars helpers
-Handlebars.registerHelper('date', (date: Date | string | null, options: any) => {
-    // ... helper body ...
+Handlebars.registerHelper('date', (dateInput: Date | string | null | undefined) => {
+    // Use the formatDate helper internally
+    return formatDate(dateInput);
 });
 
-Handlebars.registerHelper('formatCurrency', (value: number | null | undefined) => {
-    // ... helper body ...
+Handlebars.registerHelper('formatCurrency', (valueInput: number | null | undefined) => {
+    if (valueInput === null || valueInput === undefined) return '[Amount Not Provided]';
+    try {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(valueInput);
+    } catch {
+        return '[Invalid Amount]';
+    }
 }); 

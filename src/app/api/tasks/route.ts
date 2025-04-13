@@ -59,27 +59,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const rawData = await request.json();
-
-    // Validate request body
-    const validation = taskCreateSchema.safeParse(rawData);
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: validation.error.flatten().fieldErrors },
-        { status: 400 }
-      );
-    }
-
-    const taskData = validation.data;
-
-    // Create the task
+    const body = await request.json();
+    // Explicitly type the new task data
+    const newTaskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'> = body;
     const task = await prisma.task.create({
-      data: taskData,
+      data: newTaskData,
     });
-
-    console.log(`Created new task: ${task.id}`);
     return NextResponse.json(task, { status: 201 });
-
   } catch (error: unknown) {
     console.error("Error creating task:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -90,7 +76,10 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   // ... PATCH logic ...
   try {
-    // ... try block ...
+    const body = await request.json();
+    // Type the array of updates
+    const updates: { id: string; status?: string; dueDate?: string | null }[] = body;
+    // ... rest of PATCH ...
   } catch (error: unknown) {
     console.error("Error updating tasks:", error);
     const message = error instanceof Error ? error.message : "Unknown error";

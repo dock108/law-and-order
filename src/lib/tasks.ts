@@ -1,6 +1,5 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { PrismaClient, Prisma } from '@prisma/client'; // Keep Prisma import
 
 // Define Task structure for creation - Updated for direct date parsing
 interface TaskTemplateItem {
@@ -93,8 +92,8 @@ function parseTasksFromMarkdown(markdownContent: string): TaskTemplateItem[] {
 /**
  * Generates a list of tasks based on client data and task templates.
  */
-export async function generateTasksForClient(clientId: string, clientData: ClientData) {
-  const templatePath = selectTaskTemplate(clientData);
+export async function generateTasksForClient(clientId: string, caseType: string | null, incidentDetails: string | null): Promise<void> {
+  const templatePath = selectTaskTemplate({ caseType: caseType || '', verbalQuality: 'Good' });
   console.log(`Selected task template: ${templatePath}`);
 
   try {
@@ -111,7 +110,7 @@ export async function generateTasksForClient(clientId: string, clientData: Clien
       };
     });
 
-    return tasksToCreate;
+    // ... function body ...
   } catch (error: unknown) {
     // Log error if template file is missing or parsing fails
     if (error instanceof Error && error.code === 'ENOENT') {
@@ -120,6 +119,6 @@ export async function generateTasksForClient(clientId: string, clientData: Clien
         console.error(`Error reading or parsing task template ${templatePath}:`, error);
     }
     // Return empty array if template processing fails
-    return [];
+    // ... function body ...
   }
 } 

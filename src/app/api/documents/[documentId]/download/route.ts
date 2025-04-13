@@ -62,11 +62,9 @@ export const GET = async (req: NextRequest, { params }: RouteParams) => {
     // Option 2: Redirect the user directly to the signed URL
     // return NextResponse.redirect(data.signedUrl, 302);
 
-  } catch (error: any) {
-    console.error(`Failed to get download URL for document ${documentId}:`, error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    console.error(`Failed to get download URL for document ${params.documentId}:`, error);
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 } 

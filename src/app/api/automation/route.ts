@@ -1,8 +1,8 @@
 import { generateAndStorePdf } from '@/lib/documents';
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { generateDocumentFromTemplate, prepareTemplateData } from '@/lib/templates';
 import OpenAI from 'openai';
@@ -64,8 +64,8 @@ async function getConsultSuggestions(clientContext: string): Promise<string[]> {
         const suggestions = content.split('\n').map(line => line.trim().replace(/^- /, '')).filter(line => line.length > 0);
         console.log("OpenAI Consult Suggestions Received:", suggestions);
         return suggestions;
-    } catch (error: any) {
-        // ... error handling ...
+    } catch (error: unknown) {
+        console.error("OpenAI Consult Suggestions Error:", error);
         throw error;
     }
 }
@@ -85,8 +85,8 @@ async function getLegalResearchSuggestions(caseType: string | null, incidentDeta
         const suggestions = content.split('\n').map(line => line.trim()).filter(line => line.length > 0);
         console.log("OpenAI Legal Research Suggestions Received (raw):", content);
         return suggestions;
-    } catch (error: any) {
-        // ... error handling ...
+    } catch (error: unknown) {
+        console.error("OpenAI Legal Research Error:", error);
         throw error;
     }
 }
@@ -104,8 +104,8 @@ async function getWitnessInterviewQuestions(caseType: string | null, incidentDet
         const questions = content.split('\n').map(line => line.trim().replace(/^- /, '')).filter(line => line.length > 0);
         console.log("OpenAI Witness Interview Questions Received:", questions);
         return questions;
-    } catch (error: any) {
-        // ... error handling ...
+    } catch (error: unknown) {
+        console.error("OpenAI Witness Questions Error:", error);
         throw error;
     }
 }
@@ -124,48 +124,15 @@ async function getEvidenceChecklist(caseType: string | null, incidentDetails?: s
         const checklist = content.split('\n').map(line => line.trim().replace(/^- /, '')).filter(line => line.length > 0);
         console.log("OpenAI Evidence Checklist Received:", checklist);
         return checklist;
-    } catch (error: any) {
-        // ... error handling ...
+    } catch (error: unknown) {
+        console.error("OpenAI Evidence Checklist Error:", error);
         throw error;
     }
 }
 // --- End OpenAI Helper Functions ---
 
-// --- Simple HTML Letterhead Wrapper ---
-function wrapWithHtmlLetterhead(bodyContent: string, firmName: string = "Your Law Firm"): string {
-    // Basic inline styles for compatibility
-    // In a real app, use a more robust templating engine or CSS inliner
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-  body { font-family: sans-serif; line-height: 1.5; }
-  .header { background-color: #f0f0f0; padding: 15px; border-bottom: 1px solid #ccc; text-align: center; }
-  .header h1 { margin: 0; font-size: 1.5em; color: #333; }
-  .content { padding: 20px; }
-  .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee; font-size: 0.8em; color: #777; text-align: center; }
-</style>
-</head>
-<body>
-  <div class="header">
-    <h1>${firmName}</h1>
-    {/* Add logo img tag here if desired */}
-  </div>
-  <div class="content">
-    ${bodyContent.replace(/\\n/g, '<br />')} 
-  </div>
-  <div class="footer">
-    This email is confidential and intended solely for the use of the individual to whom it is addressed.
-  </div>
-</body>
-</html>
-    `;
-}
-
 // --- Main POST Handler ---
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     console.log("Received POST request on /api/automation");
 
     const session = await getServerSession(authOptions);

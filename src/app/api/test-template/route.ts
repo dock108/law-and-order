@@ -20,7 +20,8 @@ const mockClientData = {
   updatedAt: new Date(),
 };
 
-export async function GET(request: Request) {
+export async function GET() {
+  console.log("GET request to /api/test-template");
   try {
     // 1. Prepare data for the template
     const templateData = prepareTemplateData(mockClientData);
@@ -52,11 +53,13 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   // ... POST logic ...
   try {
     // ... try block ...
   } catch (error: unknown) {
-    // ... catch block ...
+    console.error("Error generating test template:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: `Failed to generate test template: ${message}` }, { status: 500 });
   }
 } 

@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation'; // Use for potential refresh after update
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import AutomationModal from './AutomationModal'; // Import the modal component
 
 // Define Task interface matching the data structure from the server
@@ -19,6 +18,8 @@ interface Task {
 interface TaskListProps {
   initialTasks: Task[];
   clientId: string; // Needed if we add more actions later
+  onTaskUpdate: (taskId: string, newStatus: Task['status']) => void;
+  onTaskDelete: (taskId: string) => void;
 }
 
 // Helper functions (can be moved to a utils file if shared)
@@ -52,20 +53,18 @@ const isTaskOverdue = (dueDateString: string | null, status: string): boolean =>
 // Define possible status transitions for the dropdown/buttons
 const availableStatuses: Task['status'][] = ['Pending', 'In Progress', 'Completed'];
 
-export default function TaskList({ initialTasks, clientId }: TaskListProps) {
+export default function TaskList({ initialTasks, clientId, onTaskUpdate, onTaskDelete }: TaskListProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
   const [openDropdownTaskId, setOpenDropdownTaskId] = useState<string | null>(null);
-  const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   // --- State for Automation Modal ---
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTaskForAutomation, setSelectedTaskForAutomation] = useState<Task | null>(null);
-  // Add state for API call loading and response messages
-  const [isAutomationLoading, setIsAutomationLoading] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [automationResult, setAutomationResult] = useState<any>(null);
   const [automationError, setAutomationError] = useState<string | null>(null);
+  const [isAutomating, setIsAutomating] = useState(false);
   // --- End State for Automation Modal ---
 
   // Close dropdown when clicking outside
@@ -85,25 +84,7 @@ export default function TaskList({ initialTasks, clientId }: TaskListProps) {
     setLoadingTaskId(taskId);
     setOpenDropdownTaskId(null); // Close dropdown on selection
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Failed to update task status:', errorData);
-        // TODO: Add user-facing error feedback
-        return; 
-      }
-      const updatedTask = await response.json();
-      setTasks(currentTasks =>
-        currentTasks.map(task =>
-          task.id === taskId ? { ...task, status: updatedTask.status } : task
-        )
-      );
-      // router.refresh(); // Optionally refresh if needed
+      await onTaskUpdate(taskId, newStatus);
     } catch (error: unknown) {
       console.error('Error calling task update API:', error);
       // TODO: Add user-facing error feedback
@@ -121,7 +102,7 @@ export default function TaskList({ initialTasks, clientId }: TaskListProps) {
       // Clear previous results/errors when opening modal
       setAutomationResult(null);
       setAutomationError(null);
-      setSelectedTaskForAutomation(task);
+      setSelectedTask(task);
       setIsModalOpen(true);
   };
 
@@ -130,7 +111,7 @@ export default function TaskList({ initialTasks, clientId }: TaskListProps) {
       if (!task || !task.automationType) return;
 
       console.log(`Starting automation API call for task ${task.id}:`, task);
-      setIsAutomationLoading(true);
+      setIsAutomating(true);
       setAutomationResult(null); // Clear previous results
       setAutomationError(null); // Clear previous errors
 
@@ -168,7 +149,7 @@ export default function TaskList({ initialTasks, clientId }: TaskListProps) {
           setAutomationError(error instanceof Error ? error.message : 'An unknown error occurred');
           // Keep modal open to show the error
       } finally {
-          setIsAutomationLoading(false);
+          setIsAutomating(false);
       }
   };
 
@@ -201,6 +182,15 @@ export default function TaskList({ initialTasks, clientId }: TaskListProps) {
     // }
     // --- End Removal ---
     console.log('No specific action defined for clicking this non-automated task.');
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await onTaskDelete(taskId);
+    } catch (error: unknown) {
+      console.error('Error calling task delete API:', error);
+      // TODO: Add user-facing error feedback
+    }
   };
 
   if (!tasks || tasks.length === 0) {
@@ -307,13 +297,13 @@ export default function TaskList({ initialTasks, clientId }: TaskListProps) {
       <AutomationModal 
         isOpen={isModalOpen}
         onClose={() => {
-            if (!isAutomationLoading) {
+            if (!isAutomating) {
                 setIsModalOpen(false);
             }
         }}
         onConfirm={handleAutomationStart}
-        task={selectedTaskForAutomation} 
-        isLoading={isAutomationLoading}
+        task={selectedTask} 
+        isLoading={isAutomating}
         result={automationResult}
         error={automationError}
         onMarkComplete={handleMarkComplete} 
