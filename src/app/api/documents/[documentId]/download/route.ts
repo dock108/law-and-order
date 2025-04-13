@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
@@ -11,7 +11,7 @@ interface RouteParams {
 const BUCKET_NAME = 'generated-documents'; // Match your Supabase bucket name
 const SIGNED_URL_EXPIRES_IN = 60 * 5; // URL valid for 5 minutes
 
-export async function GET(request: Request, { params }: RouteParams) {
+export const GET = async (req: NextRequest, { params }: RouteParams) => {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

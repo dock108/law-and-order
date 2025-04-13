@@ -104,7 +104,7 @@ export default function TaskList({ initialTasks, clientId }: TaskListProps) {
         )
       );
       // router.refresh(); // Optionally refresh if needed
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error calling task update API:', error);
       // TODO: Add user-facing error feedback
     } finally {
@@ -163,9 +163,9 @@ export default function TaskList({ initialTasks, clientId }: TaskListProps) {
           // Keep the modal open to show the result briefly or provide next steps
           // setIsModalOpen(false); // Close modal immediately (optional)
 
-      } catch (error: any) {
+      } catch (error: unknown) {
           console.error('Error calling automation API:', error);
-          setAutomationError(error.message || 'An unknown error occurred');
+          setAutomationError(error instanceof Error ? error.message : 'An unknown error occurred');
           // Keep modal open to show the error
       } finally {
           setIsAutomationLoading(false);

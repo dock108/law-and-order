@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ComponentProps } from 'react'; // For typing Link props
 
 // Reuse DocumentRecord interface (or import if defined centrally)
@@ -36,6 +36,20 @@ export default function DocumentManager({ clientId, initialDocuments }: Document
 
     const availableTemplates = ['demand-letter', 'representation-letter']; // Example list
 
+    const fetchDocuments = async () => {
+        setIsLoading(prev => ({ ...prev, fetch: true }));
+        setError(null);
+        setSuccess(null);
+        try {
+            // ... function body ...
+        } catch (error: unknown) {
+            console.error("Error fetching documents:", error);
+            setError("Failed to load documents.");
+        } finally {
+            setIsLoading(prev => ({ ...prev, fetch: false }));
+        }
+    };
+
     // Function to generate a new document
     const handleGenerateDocument = async (documentType: string) => {
         setIsLoading(prev => ({ ...prev, [`generate-${documentType}`]: true }));
@@ -54,8 +68,8 @@ export default function DocumentManager({ clientId, initialDocuments }: Document
             // Add the new document to the list
             setDocuments(prev => [newDoc, ...prev]);
             setSuccess(`Successfully generated ${documentType}.`);
-        } catch (err: any) {
-            setError(err.message || 'Document generation failed.');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Document generation failed.');
         } finally {
             setIsLoading(prev => ({ ...prev, [`generate-${documentType}`]: false }));
         }
@@ -83,8 +97,8 @@ export default function DocumentManager({ clientId, initialDocuments }: Document
             link.click();
             document.body.removeChild(link); // Clean up
 
-        } catch (err: any) {
-            setError(err.message || 'Download failed.');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Download failed.');
         } finally {
             setIsLoading(prev => ({ ...prev, [`download-${documentId}`]: false }));
         }
@@ -96,6 +110,16 @@ export default function DocumentManager({ clientId, initialDocuments }: Document
             .split('-')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
+    };
+
+    const handleDownloadZip = async () => {
+        // ... function body ...
+        try {
+            // ... try block ...
+        } catch (error: unknown) {
+            console.error("Error creating or downloading ZIP:", error);
+            setError("Failed to download documents as ZIP.");
+        }
     };
 
     return (

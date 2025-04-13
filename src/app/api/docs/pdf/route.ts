@@ -1,8 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { z } from 'zod';
 import jsPDF from 'jspdf';
+import { PrismaClient } from '@prisma/client';
+import * as pdfMake from 'pdfmake/build/pdfmake';
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+import { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { marked } from 'marked';
+import { supabase } from '@/lib/supabaseClient';
+
+// Assign vfs to pdfMake
+(pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 
 // Zod schema for validating the incoming request body
 const pdfRequestSchema = z.object({
@@ -10,7 +19,7 @@ const pdfRequestSchema = z.object({
   filename: z.string().optional().default('document.pdf'), // Optional filename
 });
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -81,11 +90,9 @@ export async function POST(request: Request) {
       },
     });
 
-  } catch (error: any) {
-    console.error('PDF Generation failed:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate PDF' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    console.error("Error generating or uploading PDF:", error);
+    const message = error instanceof Error ? error.message : "Unknown PDF error";
+    return NextResponse.json({ error: `PDF Generation Error: ${message}` }, { status: 500 });
   }
 } 

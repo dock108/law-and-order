@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
@@ -27,7 +27,7 @@ const emailRequestSchema = z.object({
 
 const BUCKET_NAME = 'generated-documents'; // Match your Supabase bucket name
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -118,11 +118,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, message: 'Email sent successfully.', emailId: emailSentData?.id });
 
-  } catch (error: any) {
-    console.error('Email sending failed:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    console.error('Error sending email:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error sending email';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 } 

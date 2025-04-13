@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { z } from 'zod';
@@ -24,7 +24,7 @@ const modifyRequestSchema = z.object({
 // Recommended model for cost/performance balance
 const AI_MODEL = 'gpt-4-turbo';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -94,18 +94,9 @@ export async function POST(request: Request) {
     // 3. API Response
     return NextResponse.json({ modifiedDocument: modifiedContent });
 
-  } catch (error: any) {
-    console.error('AI document modification failed:', error);
-
-    if (error instanceof OpenAI.APIError) {
-        // Handle specific OpenAI API errors
-        return NextResponse.json({ error: `OpenAI API Error: ${error.status} ${error.name}`, details: error.message }, { status: error.status || 500 });
-    }
-
-    // General error
-    return NextResponse.json(
-      { error: error.message || 'Failed to modify document' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    console.error("Error modifying document:", error);
+    const message = error instanceof Error ? error.message : "Unknown modification error";
+    return NextResponse.json({ error: `Failed to modify document: ${message}` }, { status: 500 });
   }
 } 

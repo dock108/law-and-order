@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import prisma from '@/lib/prisma'; // Although not directly used here, keep for consistency or future use
 import { z } from 'zod';
 import {
   generateDocumentFromTemplate,
   prepareTemplateData,
 } from '@/lib/templates';
+import { PrismaClient } from '@prisma/client'; // Keep if used
 
 // Zod schema for validating the incoming request body
 // We expect a document type and a client data object
@@ -28,7 +28,7 @@ const generateRequestSchema = z.object({
   }),
 });
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -69,18 +69,9 @@ export async function POST(request: Request) {
       },
     });
 
-  } catch (error: any) {
-    console.error('Document generation failed:', error);
-
-    // Specific error handling for template not found
-    if (error.message.includes('not found')) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
-
-    // General error
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate document' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    console.error("Error generating document:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: `Failed to generate document: ${message}` }, { status: 500 });
   }
 } 

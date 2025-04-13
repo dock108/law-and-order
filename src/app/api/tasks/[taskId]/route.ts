@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
@@ -59,15 +59,47 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     console.log(`Updated task ${taskId} status to ${status}`);
     return NextResponse.json(updatedTask);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle potential errors, like task not found during update (P2025)
     if (error instanceof Error && (error as any).code === 'P2025') {
         return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
     console.error(`Failed to update task ${taskId}:`, error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: `Failed to update task: ${message}` }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: { taskId: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { taskId } = params;
+  if (!taskId) {
+    return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
+  }
+
+  try {
+    // Optional: Verify the task belongs to a client accessible by the current user
+    // This requires knowing the user structure or assuming single-user setup
+    // const task = await prisma.task.findUnique({ where: { id: taskId }, include: { client: true } });
+    // if (!task /* || task.client.userId !== session.user.id */ ) {
+    //     return NextResponse.json({ error: 'Task not found or access denied' }, { status: 404 });
+    // }
+
+    // Delete the task
+    const deletedTask = await prisma.task.delete({
+      where: { id: taskId },
+    });
+
+    console.log(`Deleted task ${taskId}`);
+    return NextResponse.json(deletedTask);
+
+  } catch (error: unknown) {
+    console.error(`Error deleting task ${taskId}:`, error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: `Failed to delete task: ${message}` }, { status: 500 });
   }
 } 

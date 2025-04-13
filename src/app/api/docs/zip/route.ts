@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
@@ -23,7 +23,7 @@ const zipRequestSchema = z.union([
 });
 
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -146,11 +146,9 @@ export async function POST(request: Request) {
       },
     });
 
-  } catch (error: any) {
-    console.error('Failed to create ZIP archive:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    console.error("Error creating zip:", error);
+    const message = error instanceof Error ? error.message : "Unknown zip error";
+    return NextResponse.json({ error: `Failed to create zip file: ${message}` }, { status: 500 });
   }
 } 
