@@ -301,6 +301,7 @@ export default function TaskList({ initialTasks, clientId, onTaskUpdate, onTaskD
             }
         }}
         automationTask={selectedTask || { id: '', description: '', status: '' }} 
+        clientId={clientId}
       />
       {/* --- End Render Modal --- */}
     </>

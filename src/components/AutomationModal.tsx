@@ -12,6 +12,7 @@ interface Task {
     automationConfig?: string | null;
     requiresDocs?: boolean | null;
     status: string;
+    clientId?: string;
 }
 
 interface AutomationResult {
@@ -36,6 +37,7 @@ interface AutomationModalProps {
     isOpen: boolean;
     onClose: () => void;
     automationTask: Task; // Changed from any to Task
+    clientId?: string;
 }
 
 // Helper function to generate a user-friendly description of the automation
@@ -66,7 +68,7 @@ const getAutomationDescription = (task: Task | null): string => {
     return details;
 };
 
-export const AutomationModal: React.FC<AutomationModalProps> = ({ isOpen, onClose, automationTask }) => {
+export const AutomationModal: React.FC<AutomationModalProps> = ({ isOpen, onClose, automationTask, clientId }) => {
     const [isLoading, setIsLoading] = React.useState(false);
     const [result, setResult] = React.useState<AutomationResult | null>(null);
     const [error, setError] = React.useState<string | null>(null);
@@ -86,11 +88,18 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({ isOpen, onClos
         setError(null);
         
         try {
+            const taskClientId = clientId || automationTask.clientId;
+            
+            if (!taskClientId) {
+                throw new Error('Client ID is required but not provided');
+            }
+            
             const response = await fetch('/api/automation', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     taskId: automationTask.id,
+                    clientId: taskClientId,
                     automationType: automationTask.automationType,
                     automationConfig: automationTask.automationConfig,
                 }),
