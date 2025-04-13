@@ -3,18 +3,14 @@ import { getServerSession } from 'next-auth/next';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 
-interface RouteParams {
-  params: { taskId: string };
-}
-
-// Zod schema for validating the request body for task update
+// Zod schema for validating the request body for PATCH
 const taskUpdateSchema = z.object({
-  status: z.enum(['Pending', 'In Progress', 'Completed', 'Overdue']), // Define allowed statuses
-  // Add other updatable fields like 'notes' if needed
+  status: z.string().optional(), // Allow updating only status for now
+  // Add other fields as needed (e.g., description, dueDate)
 });
 
 // PATCH /api/tasks/[taskId]
-export async function PATCH(request: Request, { params }: RouteParams) {
+export async function PATCH(request: Request, { params }) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

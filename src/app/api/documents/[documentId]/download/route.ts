@@ -3,14 +3,10 @@ import { getServerSession } from 'next-auth/next';
 import prisma from '@/lib/prisma';
 import { supabaseAdmin } from '@/lib/supabase';
 
-interface RouteParams {
-  params: { documentId: string };
-}
-
 const BUCKET_NAME = 'generated-documents'; // Match your Supabase bucket name
 const SIGNED_URL_EXPIRES_IN = 60 * 5; // URL valid for 5 minutes
 
-export const GET = async (req: NextRequest, { params }: RouteParams) => {
+export const GET = async (req: NextRequest, { params }) => {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
