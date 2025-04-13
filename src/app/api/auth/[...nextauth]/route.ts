@@ -85,6 +85,6 @@ export const authOptions: NextAuthOptions = {
 };
 
 // Correctly type the handler parameters, even if req isn't used internally by NextAuth
-const handler = (req: NextRequest, res: NextResponse) => NextAuth(req, res, authOptions);
+const handler = (_req: NextRequest, res: NextResponse) => NextAuth(_req, res, authOptions);
 
 export { handler as GET, handler as POST }; 

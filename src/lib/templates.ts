@@ -11,7 +11,7 @@ interface ClientData { // Define or import a proper Client type
     // ... add other potential client fields used in templates
 }
 
-interface TemplateData extends Record<string, any> { // Base type
+interface TemplateData extends Record<string, unknown> { // Changed from any to unknown
     clientName?: string;
     clientDobFormatted?: string;
     clientAddress?: string;

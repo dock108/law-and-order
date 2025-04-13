@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
         // Use const and the defined interface
         const responsePayload: AutomationResponsePayload = { success: true, message: 'Automation processed.', action: automationType };
         // Specify Prisma Promise type for the array
-        const dbUpdates: Prisma.PrismaPromise<any>[] = []; 
+        const dbUpdates: Prisma.PrismaPromise<unknown>[] = []; 
 
         // Inner try-catch for automation-specific logic errors
         try {

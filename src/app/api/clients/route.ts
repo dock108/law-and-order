@@ -9,7 +9,10 @@ import {
 } from '@/lib/templates';
 import { generateTasksForClient } from '@/lib/tasks';
 import { generateAndStorePdf } from '@/lib/documents';
-import { PrismaClient, Task } from '@prisma/client'; // Removed Prisma namespace
+import { Task } from '@prisma/client'; // Removed PrismaClient import
+
+// Define type for client data returned from validation
+type ClientData = z.infer<typeof clientSchema>;
 
 // Zod schema for validating the request body for client creation
 const clientSchema = z.object({
@@ -47,7 +50,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid input', details: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const clientData: Record<string, any> = validation.data;
+    const clientData: Record<string, unknown> = validation.data;
 
     // Step 1: Use Prisma to create the client
     newClient = await prisma.client.create({
@@ -87,9 +90,9 @@ export async function POST(request: NextRequest) {
 
             generatedDocsInfo.push({ documentType: templateName, documentId: result.documentId, filePath: result.filePath });
 
-        } catch (docError: any) {
+        } catch (docError: unknown) {
             // Log error for this specific document but continue to next template
-            console.error(`Failed to generate/store document type "${templateName}" for client ${newClient?.id}:`, docError.message || docError);
+            console.error(`Failed to generate/store document type "${templateName}" for client ${newClient?.id}:`, docError instanceof Error ? docError.message : docError);
             // Optionally, collect errors to return later if needed
         }
     }
@@ -102,8 +105,8 @@ export async function POST(request: NextRequest) {
       // This assumes clientData might have fields like caseType, verbalQuality needed by generateTasksForClient
       // You might need to adjust clientData shape or add fields to Prisma model first
       const clientInputDataForTasks = {
-          caseType: (clientData as any).caseType, // Example: Assuming these fields exist or will be added
-          verbalQuality: (clientData as any).verbalQuality
+          caseType: clientData.caseType, 
+          verbalQuality: clientData.verbalQuality
           // Pass other relevant fields from clientData
       };
       
@@ -138,7 +141,7 @@ export async function POST(request: NextRequest) {
     const message = error instanceof Error ? error.message : "An unknown error occurred";
 
     // Check for specific Prisma errors (like unique constraint violation) during client creation
-    if (error instanceof Error && (error as any).code === 'P2002' && (error as any).meta?.target?.includes('email')) {
+    if (error instanceof Error && 'code' in error && error.code === 'P2002' && error.meta?.target?.includes('email')) {
       return NextResponse.json({ error: 'Email address already in use.' }, { status: 409 }); // 409 Conflict
     }
 
