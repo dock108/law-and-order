@@ -4,13 +4,8 @@ import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { supabaseAdmin } from '@/lib/supabase'; // Import Supabase admin client
 
-// Define the expected params structure
-interface RouteContext {
-    params: { clientId: string };
-}
-
 // 3. Retrieve Single Client (GET by ID)
-export async function GET(request: NextRequest, { params }: RouteContext) {
+export async function GET(request: NextRequest, { params }) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -76,7 +71,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 }
 
 // 4. Client Update (PUT/PATCH - Placeholder)
-export async function PUT(request: NextRequest, { params }: RouteContext) {
+export async function PUT(request: NextRequest, { params }) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -95,7 +90,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 }
 
 // 4. Client Delete (DELETE - Placeholder)
-export async function DELETE(request: NextRequest, { params }: RouteContext) {
+export async function DELETE(request: NextRequest, { params }) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
