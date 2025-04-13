@@ -111,7 +111,7 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
 
   try {
     // Use a Prisma transaction to ensure all deletions succeed or fail together
-    const result = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       // 1. Find related documents to get their Supabase paths
       const documentsToDelete = await tx.document.findMany({
         where: { clientId: clientId },
@@ -146,12 +146,11 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
 
       // 5. Delete the client record itself
       // This will trigger cascade deletes for related records if schema is configured
-      const deletedClient = await tx.client.delete({
+      await tx.client.delete({
         where: { id: clientId },
       });
       
       console.log(`Successfully deleted client ${clientId} from database.`);
-      return deletedClient; // Return value from transaction
     });
 
     // If transaction is successful
