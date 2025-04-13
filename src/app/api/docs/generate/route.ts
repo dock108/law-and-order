@@ -5,7 +5,6 @@ import {
   generateDocumentFromTemplate,
   prepareTemplateData,
 } from '@/lib/templates';
-import prisma from '@/lib/prisma';
 
 // Zod schema for validating the incoming request body
 // We expect a document type and a client data object
