@@ -7,8 +7,8 @@ import {
   prepareTemplateData,
 } from '@/lib/templates';
 import { generateTasksForClient } from '@/lib/tasks';
-import { generateAndStorePdf } from '@/lib/documents';
-import { Task } from '@prisma/client'; // Removed PrismaClient import
+import { generateAndStoreInitialDocuments } from '@/lib/templates';
+import { Task, Prisma } from '@prisma/client';
 
 // Zod schema for validating the request body for client creation
 const clientSchema = z.object({
@@ -25,9 +25,6 @@ const clientSchema = z.object({
   verbalQuality: z.string().min(1, { message: 'Verbal Quality is required' }),
 });
 
-// Added Constants
-const DEFAULT_ONBOARDING_TEMPLATES = ['demand-letter', 'representation-letter']; // Add more as needed
-
 // 1. Client Creation (POST)
 export async function POST(request: NextRequest) {
   const session = await getServerSession();
@@ -35,7 +32,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let newClient; // Define client variable in outer scope
+  let newClient: Prisma.ClientGetPayload<{}> | null = null; // Type Prisma client
 
   try {
     const rawData = await request.json();
@@ -46,7 +43,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid input', details: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const clientData: Record<string, unknown> = validation.data;
+    // Use validated data directly (with correct types)
+    const clientData = validation.data;
 
     // Step 1: Use Prisma to create the client
     newClient = await prisma.client.create({
@@ -65,70 +63,53 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log(`Client ${newClient.id} created successfully. Proceeding to document and task generation.`);
+    console.log(`Client ${newClient.id} created successfully. Proceeding to task and document generation.`);
 
-    // START: Auto-generate default documents
-    const generatedDocsInfo = [];
-    for (const templateName of DEFAULT_ONBOARDING_TEMPLATES) {
-        try {
-            console.log(`Generating ${templateName} for client ${newClient.id}...`);
-
-            // Step 2a: Generate Content
-            const templateData = prepareTemplateData(newClient); // Use the newly created client data
-            const generatedContent = await generateDocumentFromTemplate(templateName, templateData);
-
-            // Call the refactored function
-            const result = await generateAndStorePdf({
-                markdownContent: generatedContent,
-                clientId: newClient.id,
-                documentType: templateName,
-            });
-
-            generatedDocsInfo.push({ documentType: templateName, documentId: result.documentId, filePath: result.filePath });
-
-        } catch (docError: unknown) {
-            // Log error for this specific document but continue to next template
-            console.error(`Failed to generate/store document type "${templateName}" for client ${newClient?.id}:`, docError instanceof Error ? docError.message : docError);
-            // Optionally, collect errors to return later if needed
-        }
-    }
-    // END: Auto-generate default documents
-
-    // START: Auto-generate default tasks
-    const generatedTasksInfo: { description: string; automationType: Task['automationType']; dueDate?: Date }[] = [];
+    // --- START: Generate Tasks (using refactored function) ---
+    let generatedTasksInfo: any = { count: 0 }; // Initialize task info object
     try {
-      // Pass relevant client data to the task generator
-      // This assumes clientData might have fields like caseType, verbalQuality needed by generateTasksForClient
-      // You might need to adjust clientData shape or add fields to Prisma model first
-      const clientInputDataForTasks = {
-          caseType: clientData.caseType, 
-          verbalQuality: clientData.verbalQuality
-          // Pass other relevant fields from clientData
-      };
-      
-      const tasksToCreate = await generateTasksForClient(newClient.id, clientInputDataForTasks);
+      // Pass the necessary fields from the *validated* and *created* client data
+      const tasksToCreate = await generateTasksForClient(newClient.id, { 
+          caseType: newClient.caseType, 
+          verbalQuality: newClient.verbalQuality 
+      });
       
       if (tasksToCreate.length > 0) {
           const result = await prisma.task.createMany({
               data: tasksToCreate,
-              skipDuplicates: true, // Optional: might prevent errors if run twice, but check if needed
+              skipDuplicates: true,
           });
-          console.log(`Successfully generated ${result.count} tasks for client ${newClient.id}.`);
-          generatedTasksInfo.count = result.count;
+          console.log(`Successfully created ${result.count} tasks for client ${newClient.id}.`);
+          generatedTasksInfo = { count: result.count };
       } else {
-          console.log(`No tasks generated for client ${newClient.id} based on selected template or template content.`);
+          console.log(`No tasks generated for client ${newClient.id}.`);
       }
     } catch (taskError: unknown) {
       console.error(`Failed to generate tasks for client ${newClient.id}:`, taskError);
-      generatedTasksInfo.error = taskError instanceof Error ? taskError.message : 'Task generation failed';
-      // Decide if this error should cause the whole request to fail
+      generatedTasksInfo = { error: taskError instanceof Error ? taskError.message : 'Task generation failed' };
+      // Consider if this error should halt the process or just be logged
     }
-    // END: Auto-generate default tasks
+    // --- END: Generate Tasks ---
+
+    // --- START: Generate Initial Documents (using new function) ---
+    let generatedDocsInfo: any[] = []; // Initialize doc info array
+    try {
+        // Pass the newly created client object (which includes id, caseType, etc.)
+        generatedDocsInfo = await generateAndStoreInitialDocuments(newClient);
+        console.log(`Document generation process completed for client ${newClient.id}. Successful: ${generatedDocsInfo.length}`);
+    } catch (docError: unknown) {
+        // This catch block might be redundant if generateAndStoreInitialDocuments handles internal errors,
+        // but good for catching unexpected failures in the function call itself.
+        console.error(`Error during initial document generation process for client ${newClient.id}:`, docError);
+        // Add error info if needed for the response
+        generatedDocsInfo = [{ error: "Document generation process failed." }];
+    }
+    // --- END: Generate Initial Documents ---
 
     // Return the newly created client object along with info about generated docs and tasks
     return NextResponse.json({
         ...newClient,
-        generatedDocuments: generatedDocsInfo,
+        generatedDocuments: generatedDocsInfo, // Include info about generated documents
         generatedTasks: generatedTasksInfo, // Include info about generated tasks
     }, { status: 201 }); // 201 Created
 
@@ -137,20 +118,23 @@ export async function POST(request: NextRequest) {
     const message = error instanceof Error ? error.message : "An unknown error occurred";
 
     // Check for specific Prisma errors (like unique constraint violation) during client creation
-    if (error instanceof Error && 'code' in error && error.code === 'P2002' && error.meta?.target?.includes('email')) {
-      return NextResponse.json({ error: 'Email address already in use.' }, { status: 409 }); // 409 Conflict
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      // More specific check for email constraint
+      if (error.meta?.target && (error.meta.target as string[]).includes('email')) { 
+          return NextResponse.json({ error: 'Email address already in use.' }, { status: 409 }); // 409 Conflict
+      }
+      return NextResponse.json({ error: 'Unique constraint violation.', details: error.meta?.target }, { status: 409 });
     }
 
     // Determine if the error happened *after* client creation
     let specificErrorMessage = 'Internal Server Error during client processing.';
-    if (message.includes('generateDocumentFromTemplate') || message.includes('generateAndStorePdf')) {
+    // Update error messages to be more generic as the exact source might be within helpers
+    if (message.includes('generateAndStoreInitialDocuments') || message.includes('generateAndStorePdf')) {
         specificErrorMessage = 'Failed during document generation/storage.';
     } else if (message.includes('generateTasksForClient') || message.includes('prisma.task.createMany')) {
         specificErrorMessage = 'Failed during task generation or saving.';
     }
 
-    // If client was created but subsequent steps failed, maybe return 207 Multi-Status or similar?
-    // For now, returning 500 but with a more specific message.
     return NextResponse.json({ 
         error: specificErrorMessage,
         details: message // Include the original error message for debugging

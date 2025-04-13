@@ -41,7 +41,7 @@ model Document {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  client        Client   @relation(fields: [clientId], references: [id]) // Relation to Client model
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([clientId]) // Add index for performance on foreign key
 }
@@ -63,7 +63,7 @@ model Task {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  client        Client   @relation(fields: [clientId], references: [id])
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([clientId]) // Index for faster task lookups by client
 } 

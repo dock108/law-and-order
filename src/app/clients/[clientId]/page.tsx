@@ -3,90 +3,63 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import Link from 'next/link';
-import { DocumentManager } from '@/components/DocumentManager';
+// import { DocumentManager } from '@/components/DocumentManager'; // Assuming DocumentList replaces this
 import { TaskList } from '@/components/TaskList';
-import { Task } from '@prisma/client';
+import DocumentList from '@/components/DocumentList'; // Import the new component
+import { Prisma } from '@prisma/client'; // Import Prisma for types
+import DeleteClientSection from '@/components/DeleteClientSection'; // Import the delete section
 
-interface Task {
-  id: string;
-  description: string;
-  dueDate: string | null;
-  status: string;
-  createdAt: string;
+// Define Document type based on expected Prisma payload
+type Document = Prisma.DocumentGetPayload<{
+    select: { id: true, documentType: true, fileUrl: true, createdAt: true, updatedAt: true }
+}>;
+
+// Define Task type based on expected Prisma payload
+type Task = Prisma.TaskGetPayload<{
+    select: { id: true, description: true, dueDate: true, status: true, createdAt: true, automationType: true, requiresDocs: true, automationConfig: true }
+}>;
+
+// Define ClientDetails with relations included
+interface ClientDetails extends Prisma.ClientGetPayload<{
+    include: { tasks: true, documents: true } 
+}> {
+    // Ensure tasks and documents are potentially included (even if empty array)
+    tasks?: Task[];
+    documents?: Document[];
 }
 
-interface ClientDetails {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string | null;
-    incidentDate?: string | null;
-    location?: string | null;
-    injuryDetails?: string | null;
-    medicalExpenses?: number | null;
-    insuranceCompany?: string | null;
-    caseType?: string; // Add fields from schema
-    verbalQuality?: string;
-    // Add tasks to the details
-    tasks?: Task[]; 
-}
-
-interface DocumentRecord {
-    id: string;
-    clientId: string;
-    documentType: string;
-    fileUrl: string; // This is the Supabase path
-    createdAt: string;
-}
+// Removed separate DocumentRecord interface
 
 interface RouteParams {
   params: { clientId: string };
 }
 
-// Helper function to fetch client details - Updated to include tasks
-async function getClientDetailsWithTasks(clientId: string, cookie: string): Promise<ClientDetails | null> {
-    // Assume the API route /api/clients/[clientId] can include tasks
-    // If not, we might need a separate fetch or adjust the API route
-    const apiUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/clients/${clientId}?includeTasks=true`; 
-    console.log(`Fetching client ${clientId} details from ${apiUrl}`);
+// Updated fetch function to include both tasks and documents
+async function getClientDetailsWithRelations(clientId: string, cookie: string): Promise<ClientDetails | null> {
+    const apiUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/clients/${clientId}?includeTasks=true&includeDocuments=true`; 
+    console.log(`Fetching client ${clientId} details with relations from ${apiUrl}`);
     try {
-        const response = await fetch(apiUrl, { headers: { 'Cookie': cookie } });
+        const response = await fetch(apiUrl, { headers: { 'Cookie': cookie, 'Cache-Control': 'no-store' } }); // Add no-store
         if (!response.ok) {
             if (response.status === 404) return null;
-            console.error(`Failed to fetch client ${clientId} with tasks: ${response.status}`);
-            throw new Error(`Failed to fetch client with tasks. Status: ${response.status}`);
+            console.error(`Failed to fetch client ${clientId} with relations: ${response.status}`);
+            throw new Error(`Failed to fetch client with relations. Status: ${response.status}`);
         }
         const clientData: ClientDetails = await response.json();
-        // Ensure tasks array exists, even if empty, to prevent errors downstream
-        if (!clientData.tasks) {
-            clientData.tasks = [];
-        }
+        // Ensure arrays exist
+        clientData.tasks = clientData.tasks || [];
+        clientData.documents = clientData.documents || [];
         return clientData;
     } catch (error) {
-        console.error(`Error fetching client ${clientId} with tasks:`, error);
+        console.error(`Error fetching client ${clientId} with relations:`, error);
         return null; // Or re-throw
     }
 }
 
-// Helper function to fetch client documents
-async function getClientDocuments(clientId: string, cookie: string): Promise<DocumentRecord[]> {
-    const apiUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/clients/${clientId}/documents`;
-    console.log(`Fetching client ${clientId} documents from ${apiUrl}`);
-     try {
-        const response = await fetch(apiUrl, { headers: { 'Cookie': cookie } });
-        if (!response.ok) {
-             console.error(`Failed to fetch documents for client ${clientId}: ${response.status}`);
-            throw new Error(`Failed to fetch documents. Status: ${response.status}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error(`Error fetching documents for client ${clientId}:`, error);
-        return [];
-    }
-}
+// Removed getClientDocuments as it's included above
 
-// Format date for display
-function formatDate(dateString: string | null | undefined): string {
+// Format date for display (keep existing)
+function formatDate(dateString: string | Date | null | undefined): string {
     if (!dateString) return 'Not provided';
     try {
         const date = new Date(dateString);
@@ -100,7 +73,7 @@ function formatDate(dateString: string | null | undefined): string {
     }
 }
 
-// Format currency for display
+// Format currency for display (keep existing)
 function formatCurrency(amount: number | null | undefined): string {
     if (amount === null || amount === undefined) return 'Not provided';
     return new Intl.NumberFormat('en-US', {
@@ -115,14 +88,12 @@ export default async function ClientDetailPage({ params }: RouteParams) {
         redirect('/api/auth/signin');
     }
 
-    // Get cookie string using headers() here in the Server Component
     const cookie = headers().get('cookie') || '';
-
     const { clientId } = params;
     
-    // Fetch data *passing the cookie* to the utility functions
-    const client = await getClientDetailsWithTasks(clientId, cookie);
-    const initialDocuments = await getClientDocuments(clientId, cookie);
+    // Use the combined fetch function
+    const client = await getClientDetailsWithRelations(clientId, cookie);
+    // const initialDocuments = await getClientDocuments(clientId, cookie); // Removed
 
     if (!client) {
         return (
@@ -143,17 +114,6 @@ export default async function ClientDetailPage({ params }: RouteParams) {
             </div>
         );
     }
-
-    // Define handlers needed by Client Components (will be passed as props)
-    // These need to be defined outside the return, but their implementation might live in Client Components
-    const handleTaskUpdate = (updatedTask: Task) => {
-        console.log('Task updated (placeholder):', updatedTask);
-        // Logic to update state would live in TaskList (Client Component)
-    };
-    const handleDeleteTask = (taskId: string) => {
-        console.log('Task deleted (placeholder):', taskId);
-        // Logic to update state would live in TaskList (Client Component)
-    };
 
     return (
         <div className="min-h-screen bg-slate-100 py-8">
@@ -253,21 +213,33 @@ export default async function ClientDetailPage({ params }: RouteParams) {
                     </div>
                 </div>
 
-                {/* Tasks Section - NEW */}
-                <div className="mb-8 bg-white shadow-md rounded-lg border border-slate-200 overflow-hidden">
-                    <div className="p-6">
-                        <h2 className="text-xl font-semibold text-slate-800 mb-4">Tasks</h2>
+                {/* Tasks Section */}
+                <div className="mb-8">
+                    <h2 className="text-xl font-serif font-bold text-slate-800 mb-4">Tasks</h2>
+                    <div className="bg-white shadow-md rounded-lg border border-slate-200 p-6">
                         <TaskList 
                             initialTasks={client.tasks || []} 
-                            clientId={client.id} 
-                            onTaskUpdate={handleTaskUpdate}
-                            onTaskDelete={handleDeleteTask}
+                            clientId={client.id}
                         />
                     </div>
                 </div>
 
-                {/* Document Management Section - Handled by Client Component */}
-                <DocumentManager clientId={client.id} initialDocuments={initialDocuments} />
+                {/* Documents Section - Using new DocumentList component */}
+                <div className="mb-8">
+                    <h2 className="text-xl font-serif font-bold text-slate-800 mb-4">Documents</h2>
+                    <div className="bg-white shadow-md rounded-lg border border-slate-200 p-6">
+                        <DocumentList 
+                            documents={client.documents || []} 
+                            clientId={client.id} 
+                        />
+                    </div>
+                </div>
+
+                {/* --- Delete Client Section --- */}
+                <DeleteClientSection 
+                    clientId={client.id} 
+                    clientName={client.name} 
+                />
             </div>
         </div>
     );

@@ -305,7 +305,7 @@ export default function TaskList({ initialTasks, clientId, onTaskUpdate, onTaskD
       {/* --- End Render Modal --- */}
     </>
   );
-}
+} 
 
 // Add named export alongside default export
 export { TaskList }; 

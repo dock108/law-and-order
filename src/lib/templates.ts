@@ -1,17 +1,23 @@
 import fs from 'fs/promises';
 import path from 'path';
 import Handlebars from 'handlebars';
+import { Prisma } from '@prisma/client'; // Import Prisma types
+import { generateAndStorePdf } from '@/lib/documents'; // Import the PDF generation function
 
-interface ClientData { // Define or import a proper Client type
-    name?: string | null;
-    email?: string | null;
+// Define Client type more completely (mirror Prisma model where possible)
+interface Client {
+    id: string;
+    name: string;
+    email: string;
     phone?: string | null;
     incidentDate?: Date | null;
     location?: string | null;
-    // ... add other potential client fields used in templates
+    caseType: string; // Required for logic
+    verbalQuality: string; // Required for logic
+    // ... other client fields ...
 }
 
-interface TemplateData extends Record<string, unknown> { // Changed from any to unknown
+interface TemplateData extends Record<string, unknown> {
     clientName?: string;
     clientDobFormatted?: string;
     clientAddress?: string;
@@ -24,6 +30,26 @@ interface TemplateData extends Record<string, unknown> { // Changed from any to 
     location?: string;
     // ... other fields ...
 }
+
+// Define mapping for initial document generation
+const documentTemplates: Record<string, Record<string, string[]>> = {
+  _default: {
+    _all: ['representation-letter'], // Always generate this
+  },
+  MVA: {
+    _all: ['mva-intake-form', 'medical-records-request'],
+    Good: ['demand-letter-high-estimate'],
+    Bad: ['demand-letter-standard'],
+    Zero: ['notice-of-claim'],
+  },
+  Fall: {
+    _all: ['fall-intake-form', 'spoliation-letter', 'medical-records-request'],
+  },
+  'Product Liability': {
+    _all: ['product-liability-intake', 'preservation-request'],
+  },
+  // 'Other' uses only defaults for now
+};
 
 /**
  * Loads and compiles a Handlebars template.
@@ -41,15 +67,9 @@ export async function generateDocumentFromTemplate(
 
   try {
     const templateContent = await fs.readFile(templatePath, 'utf-8');
-
-    // Compile the template
     const compiledTemplate = Handlebars.compile(templateContent);
-
-    // Populate the template with data
     const populatedContent = compiledTemplate(data);
-
     return populatedContent;
-
   } catch (error: unknown) {
       console.error(`Error reading or compiling template ${templateName}:`, error);
     const message = error instanceof Error ? error.message : "Unknown template error";
@@ -144,7 +164,7 @@ export function formatCurrency(valueInput: number | null | undefined): string {
 // --- Prepare data specifically for Handlebars context ---
 // This function transforms raw client data into the shape needed by the template,
 // including formatted fields.
-export function prepareTemplateData(client: Partial<ClientData>): TemplateData {
+export function prepareTemplateData(client: Partial<Client>): TemplateData {
     const firmDetails = { // Move firm details to env or config
         firmName: process.env.NEXT_PUBLIC_FIRM_NAME || "Hynes & Colacci Law Firm",
         firmAddress: process.env.NEXT_PUBLIC_FIRM_ADDRESS || "123 Law St, Anytown, USA",
@@ -163,6 +183,57 @@ export function prepareTemplateData(client: Partial<ClientData>): TemplateData {
         // clientDobFormatted: formatDate(client.dob), // Example
         // clientAddress: client.address || '[Address Missing]',
     };
+}
+
+// --- NEW: Generate and store initial documents based on client data ---
+/**
+ * Determines applicable document templates, generates them using client data,
+ * stores them as PDFs in Supabase, and creates Prisma Document records.
+ */
+export async function generateAndStoreInitialDocuments(
+    client: Client // Expect a complete client object after creation
+): Promise<Array<{ documentType: string; documentId: string; filePath: string }>> {
+    const { id: clientId, caseType, verbalQuality } = client;
+    let applicableTemplates: string[] = [];
+    const generatedDocsInfo = [];
+
+    // 1. Determine applicable templates
+    applicableTemplates = applicableTemplates.concat(documentTemplates._default?._all || []);
+    const caseTemplates = documentTemplates[caseType];
+    if (caseTemplates) {
+        applicableTemplates = applicableTemplates.concat(caseTemplates._all || []);
+        applicableTemplates = applicableTemplates.concat(caseTemplates[verbalQuality] || []);
+    }
+    // Remove duplicates
+    applicableTemplates = [...new Set(applicableTemplates)];
+
+    console.log(`Client ${clientId}: Determined initial document templates:`, applicableTemplates);
+
+    // 2. Generate and store each document
+    for (const templateName of applicableTemplates) {
+        try {
+            console.log(`Generating document "${templateName}" for client ${clientId}...`);
+            const templateData = prepareTemplateData(client);
+            const generatedContent = await generateDocumentFromTemplate(templateName, templateData);
+            
+            // Call the existing PDF generation/storage function
+            const result = await generateAndStorePdf({
+                markdownContent: generatedContent,
+                clientId: clientId,
+                documentType: templateName,
+            });
+
+            generatedDocsInfo.push({ documentType: templateName, documentId: result.documentId, filePath: result.filePath });
+            console.log(`Successfully generated and stored "${templateName}" for client ${clientId}. Path: ${result.filePath}`);
+
+        } catch (docError: unknown) {
+            // Log error for this specific document but continue to next template
+            console.error(`Failed to generate/store document type "${templateName}" for client ${clientId}:`, docError instanceof Error ? docError.message : docError);
+            // Optionally, collect errors to return later if needed
+        }
+    }
+
+    return generatedDocsInfo;
 }
 
 // Register Handlebars helpers

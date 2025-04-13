@@ -1,125 +1,117 @@
-import fs from 'fs/promises';
-import path from 'path';
+import { Prisma } from '@prisma/client';
 
-// Define Task structure for creation - Updated for direct date parsing
-interface TaskTemplateItem {
+// Define the structure for task data expected by Prisma
+// This helps ensure the function returns the correct shape.
+type TaskCreateInput = Omit<Prisma.TaskCreateManyInput, 'clientId'> & { clientId?: string };
+
+// Task template structure
+interface TaskTemplate {
   description: string;
-  dueDate: Date | null; // Store parsed date directly
+  // Optional: Set a default relative due date (e.g., days from creation)
+  // dueDateOffsetDays?: number;
+  // Optional: Add automation hints if needed later
+  // automationType?: string;
 }
 
-interface ClientData {
-    // Using the actual fields from the updated Client model
-    caseType: string; 
-    verbalQuality: string; 
-    // Add other relevant fields as needed
-}
-
-/**
- * Selects the appropriate task template filename based on client data.
- */
-function selectTaskTemplate(clientData: ClientData): string {
-  // Point to the new template location
-  const basePath = './docs/task-templates/'; 
-  let filename = 'tasks-generic.md'; // Default filename
-
-  const { caseType, verbalQuality } = clientData;
-
-  // Refined selection logic based on caseType and verbalQuality
-  if (caseType === 'MVA') {
-    if (verbalQuality === 'Good') {
-      filename = 'tasks-initial-mva-good-verbal.md';
-    } else if (verbalQuality === 'Bad') {
-      // Assuming we have a specific file for this now
-      filename = 'tasks-initial-mva-bad-verbal.md'; 
-    } else if (verbalQuality === 'Zero') {
-      filename = 'tasks-initial-mva-zero.md';
-    } 
-    // If MVA but verbalQuality is 'N/A' or something else, it falls through to generic
-  } else {
-    // Handle non-MVA cases or other specific types
-    if (verbalQuality === 'Good') {
-      // Generic good verbal for non-MVA cases
-      filename = 'tasks-initial-good-verbal.md'; 
-    } 
-    // Add more conditions for other case types (Fall, Product Liability, etc.) if needed
-    // If no specific match, it defaults to tasks-generic.md
-  }
-  
-  // Use path.resolve to get the absolute path, which is more reliable
-  return path.resolve(basePath, filename);
-}
-
-/**
- * Parses Markdown content to extract tasks and specific due dates.
- * Expected format: "- [ ] Task description (due: YYYY-MM-DD)" or "- [ ] Task description"
- */
-function parseTasksFromMarkdown(markdownContent: string): TaskTemplateItem[] {
-  const tasks: TaskTemplateItem[] = [];
-  const lines = markdownContent.split('\n');
-  // Updated Regex to capture description and specific date YYYY-MM-DD
-  // Looks for "- [ ] ", captures text until "(due:", then captures the date
-  const taskRegex = /^\s*-\s*\[\s*\]\s+(.*?)(?:\s*\(due:\s*(\d{4}-\d{2}-\d{2})\))?\s*$/i;
-
-  for (const line of lines) {
-    const match = line.trim().match(taskRegex);
-    if (match) {
-      const description = match[1].trim();
-      let dueDate: Date | null = null;
-      if (match[2]) { // If date string was captured
-          try {
-              // Parse the YYYY-MM-DD string. Important: Date constructor handles this format correctly, 
-              // but it parses it as UTC. Add time zone handling if specific local times are needed.
-              const dateString = match[2];
-              dueDate = new Date(dateString + 'T00:00:00'); // Add T00:00:00 to avoid timezone issues with Date constructor
-              if (isNaN(dueDate.getTime())) { // Check if the date parsing was successful
-                console.warn(`Invalid date format found: ${match[2]} in line: "${line}"`);
-                dueDate = null;
-              }
-          } catch (e) {
-              console.warn(`Error parsing date string ${match[2]} in line "${line}":`, e);
-              dueDate = null;
-          }
-      }
-      
-      if (description) {
-          tasks.push({ description, dueDate }); // Use the parsed date
-      }
-    }
-  }
-  return tasks;
-}
+// Define task templates keyed by case type and verbal quality
+// Using a nested structure for clarity
+const taskTemplates: Record<string, Record<string, TaskTemplate[]>> = {
+  // Default tasks for ALL clients (MVP core set)
+  _default: {
+    _all: [
+      { description: 'Initial Client Consult' },
+      { description: 'Draft Initial Demand Letter' },
+      { description: 'Obtain Initial Medical Records' },
+    ],
+  },
+  // Case Type Specific Tasks
+  MVA: {
+    _all: [ // Tasks for all MVA cases
+      { description: 'Request Police Report' },
+      { description: 'Investigate Accident Scene' },
+    ],
+    Good: [ // Tasks specifically for MVA + Good Verbal
+      { description: 'Draft Initial Demand Letter (High Estimate)' },
+    ],
+    Bad: [ // Tasks specifically for MVA + Bad Verbal
+      { description: 'Prepare for Litigation (Lower Initial Offer Likely)' },
+    ],
+    Zero: [ // Tasks specifically for MVA + Zero Verbal
+      { description: 'Focus on Objective Evidence (Police Report, Medicals)' },
+    ],
+    // 'N/A' verbal quality for MVA will only get _default and MVA._all tasks
+  },
+  Fall: {
+    _all: [
+      { description: 'Investigate Property Conditions' },
+      { description: 'Identify Property Owner/Manager' },
+      { description: 'Preserve Incident Evidence (Photos, Videos)' },
+    ],
+    // Add verbal quality specifics if needed for Fall cases
+  },
+  'Product Liability': {
+    _all: [
+      { description: 'Identify Product Manufacturer/Distributor' },
+      { description: 'Research Similar Incidents/Recalls' },
+      { description: 'Preserve Product Evidence' },
+    ],
+  },
+  Other: {
+    _all: [
+      { description: 'Define Specific Case Strategy' },
+    ],
+  },
+};
 
 /**
  * Generates a list of tasks based on client data and task templates.
  */
-export async function generateTasksForClient(clientId: string, caseType: string | null): Promise<void> {
-  const templatePath = selectTaskTemplate({ caseType: caseType || '', verbalQuality: 'Good' });
-  console.log(`Selected task template: ${templatePath}`);
+export async function generateTasksForClient(
+  clientId: string,
+  clientData: { caseType: string; verbalQuality: string }
+): Promise<TaskCreateInput[]> { // Correct return type
+  
+  const { caseType, verbalQuality } = clientData;
+  let combinedTasks: TaskTemplate[] = [];
 
-  try {
-    const markdownContent = await fs.readFile(templatePath, 'utf-8');
-    const taskTemplates = parseTasksFromMarkdown(markdownContent);
+  // 1. Add default tasks
+  combinedTasks = combinedTasks.concat(taskTemplates._default?._all || []);
 
-    // Map task templates to task records - ready to be created in database
-    // For now we just create the data structure, actual DB operations happen outside
-    return taskTemplates.map(template => {
-      return {
-        clientId: clientId,
-        description: template.description,
-        dueDate: template.dueDate,
-        status: 'Pending', 
-      };
-    });
-
-    // ... function body ...
-  } catch (error: unknown) {
-    // Log error if template file is missing or parsing fails
-    if (error instanceof Error && error.code === 'ENOENT') {
-         console.error(`Task template file not found: ${templatePath}. Falling back to empty array.`);
-    } else {
-        console.error(`Error reading or parsing task template ${templatePath}:`, error);
-    }
-    // Return empty array if template processing fails
-    return [];
+  // 2. Add case type specific tasks (if defined)
+  const caseTypeTasks = taskTemplates[caseType];
+  if (caseTypeTasks) {
+    combinedTasks = combinedTasks.concat(caseTypeTasks._all || []);
+    // 3. Add verbal quality specific tasks for this case type (if defined)
+    combinedTasks = combinedTasks.concat(caseTypeTasks[verbalQuality] || []);
   }
+
+  // Ensure descriptions are unique to avoid potential issues if needed later
+  // (Using a Map to keep the first occurrence if duplicates exist)
+  const uniqueTasksMap = new Map<string, TaskTemplate>();
+  combinedTasks.forEach(task => {
+    if (!uniqueTasksMap.has(task.description)) {
+      uniqueTasksMap.set(task.description, task);
+    }
+  });
+
+  const tasksToCreate: TaskCreateInput[] = Array.from(uniqueTasksMap.values()).map(template => {
+    // Calculate due date if offset is provided (optional)
+    // let dueDate: Date | null = null;
+    // if (template.dueDateOffsetDays) {
+    //   dueDate = new Date();
+    //   dueDate.setDate(dueDate.getDate() + template.dueDateOffsetDays);
+    // }
+
+    return {
+      clientId: clientId,
+      description: template.description,
+      status: 'Pending',
+      // dueDate: dueDate, // Add calculated due date here
+      // automationType: template.automationType, // Add automation hint
+    };
+  });
+
+  console.log(`Generated ${tasksToCreate.length} tasks for client ${clientId} based on caseType: ${caseType}, verbalQuality: ${verbalQuality}`);
+  
+  return tasksToCreate;
 } 

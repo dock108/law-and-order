@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
+import { supabaseAdmin } from '@/lib/supabase'; // Import Supabase admin client
+
+// Define the expected params structure
+interface RouteContext {
+    params: { clientId: string };
+}
 
 // 3. Retrieve Single Client (GET by ID)
-export async function GET(request: NextRequest, { params }) {
+export async function GET(request: NextRequest, { params }: RouteContext) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -15,29 +22,43 @@ export async function GET(request: NextRequest, { params }) {
     return NextResponse.json({ error: 'Invalid Client ID' }, { status: 400 });
   }
 
-  // Check for query parameter to include tasks
+  // Check for query parameters to include tasks and documents
   const { searchParams } = new URL(request.url);
   const includeTasks = searchParams.get('includeTasks') === 'true';
+  const includeDocuments = searchParams.get('includeDocuments') === 'true';
 
   try {
-    const findOptions: Parameters<typeof prisma.client.findUnique>[0] = {
+    // Use Prisma.ClientFindUniqueArgs for better type safety
+    const findOptions: Prisma.ClientFindUniqueArgs = {
       where: {
         id: clientId,
       },
+      include: {} // Initialize include object
     };
 
-    // Conditionally include tasks based on query param
+    // Conditionally include tasks
     if (includeTasks) {
-        findOptions.include = {
-            tasks: {
-                orderBy: {
-                    dueDate: 'asc',
-                },
-            },
-        };
-        console.log(`Fetching client ${clientId} WITH tasks...`);
-    } else {
-        console.log(`Fetching client ${clientId} without tasks...`);
+      findOptions.include.tasks = {
+        orderBy: {
+          createdAt: 'desc', // Or sort as needed
+        },
+      };
+      console.log(`Fetching client ${clientId} WITH tasks...`);
+    }
+    
+    // Conditionally include documents
+    if (includeDocuments) {
+      findOptions.include.documents = {
+        orderBy: {
+            createdAt: 'desc', // Or sort as needed
+        },
+      };
+      console.log(`Fetching client ${clientId} WITH documents...`);
+    }
+    
+    // Remove include object if empty to avoid Prisma errors
+    if (Object.keys(findOptions.include).length === 0) {
+        delete findOptions.include;
     }
 
     const client = await prisma.client.findUnique(findOptions);
@@ -55,7 +76,7 @@ export async function GET(request: NextRequest, { params }) {
 }
 
 // 4. Client Update (PUT/PATCH - Placeholder)
-export async function PUT(request: NextRequest, { params }) {
+export async function PUT(request: NextRequest, { params }: RouteContext) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -74,22 +95,77 @@ export async function PUT(request: NextRequest, { params }) {
 }
 
 // 4. Client Delete (DELETE - Placeholder)
-export async function DELETE(request: NextRequest, { params }) {
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { clientId } = params;
-  // TODO: Implement DELETE logic
-  // 1. Validate clientId
-  // 2. Consider implications: What happens to related Documents?
-  //    - Delete them? (Cascade delete - configure in Prisma schema or handle manually)
-  //    - Disassociate them? (Set clientId to null - requires schema change)
-  // 3. Use prisma.client.delete() or prisma.client.update() (for soft delete)
-  // 4. Handle errors (e.g., not found)
-  // 5. Return success message or status code (e.g., 204 No Content)
 
-  console.log(`Placeholder for DELETE /api/clients/${clientId}`);
-  return NextResponse.json({ message: 'Delete endpoint not implemented yet.', clientId }, { status: 501 }); // 501 Not Implemented
+  if (!clientId || typeof clientId !== 'string') {
+    return NextResponse.json({ error: 'Invalid Client ID' }, { status: 400 });
+  }
+
+  console.log(`Attempting to delete client ${clientId} and associated data...`);
+
+  try {
+    // Use a Prisma transaction to ensure all deletions succeed or fail together
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Find related documents to get their Supabase paths
+      const documentsToDelete = await tx.document.findMany({
+        where: { clientId: clientId },
+        select: { id: true, fileUrl: true },
+      });
+
+      // 2. Delete files from Supabase Storage
+      if (documentsToDelete.length > 0) {
+        const filePaths = documentsToDelete.map(doc => doc.fileUrl).filter(Boolean); // Filter out any null/empty paths
+        if (filePaths.length > 0) {
+            console.log(`Deleting ${filePaths.length} files from Supabase for client ${clientId}:`, filePaths);
+            const { data, error } = await supabaseAdmin.storage
+                .from('generated-documents') // Use your bucket name
+                .remove(filePaths);
+            
+            if (error) {
+                console.error('Supabase file deletion error:', error);
+                // Decide if this should roll back the transaction
+                throw new Error(`Failed to delete associated documents from storage: ${error.message}`);
+            }
+            console.log('Supabase file deletion result:', data);
+        }
+      }
+
+      // 3. Delete related documents from Prisma (cascades should handle this if set up)
+      // If cascade delete is NOT set on Document -> Client relation, delete manually:
+      // await tx.document.deleteMany({ where: { clientId: clientId } });
+      
+      // 4. Delete related tasks from Prisma (cascades should handle this if set up)
+      // If cascade delete is NOT set on Task -> Client relation, delete manually:
+      // await tx.task.deleteMany({ where: { clientId: clientId } });
+
+      // 5. Delete the client record itself
+      // This will trigger cascade deletes for related records if schema is configured
+      const deletedClient = await tx.client.delete({
+        where: { id: clientId },
+      });
+      
+      console.log(`Successfully deleted client ${clientId} from database.`);
+      return deletedClient; // Return value from transaction
+    });
+
+    // If transaction is successful
+    return new NextResponse(null, { status: 204 }); // 204 No Content is standard for successful DELETE
+
+  } catch (error: unknown) {
+    console.error(`Failed to delete client ${clientId}:`, error);
+
+    // Handle case where client doesn't exist (prisma throws P2025)
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+    }
+    
+    const message = error instanceof Error ? error.message : "Internal Server Error during deletion";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 } 
