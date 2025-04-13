@@ -16,11 +16,11 @@ interface TaskTemplate {
 // Define task templates keyed by case type and verbal quality
 // Using a nested structure for clarity
 const taskTemplates: Record<string, Record<string, TaskTemplate[]>> = {
-  // Default tasks for ALL clients (MVP core set)
+  // Default tasks for ALL clients
   _default: {
     _all: [
       { description: 'Initial Client Consult' },
-      { description: 'Draft Initial Demand Letter' },
+      { description: 'Send Representation Letter' }, // Can be linked to document generation
       { description: 'Obtain Initial Medical Records' },
     ],
   },

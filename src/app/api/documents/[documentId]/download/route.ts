@@ -6,13 +6,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 const BUCKET_NAME = 'generated-documents'; // Match your Supabase bucket name
 const SIGNED_URL_EXPIRES_IN = 60 * 5; // URL valid for 5 minutes
 
-type Params = {
-  params: {
-    documentId: string;
-  };
-};
-
-export const GET = async (req: NextRequest, { params }: Params) => {
+export const GET = async (req: NextRequest, { params }) => {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

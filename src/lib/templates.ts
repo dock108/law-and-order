@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import Handlebars from 'handlebars';
-// import { Prisma } from '@prisma/client'; // Removed unused import
+import { Prisma } from '@prisma/client'; // Import Prisma types
 import { generateAndStorePdf } from '@/lib/documents'; // Import the PDF generation function
 
 // Define Client type more completely (mirror Prisma model where possible)

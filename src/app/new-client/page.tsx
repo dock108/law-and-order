@@ -86,41 +86,38 @@ export default function NewClientPage() {
         body: JSON.stringify(payload),
       });
 
-      if (response.ok) {
-        const result = await response.json(); // Parse the successful response
-        const clientId = result.id; // Get the ID of the newly created client
-        
-        setSuccess(`Client ${result.name} added successfully! Generated documents are available in their profile. Redirecting...`);
-        console.log('Client created:', result);
-
-        // Redirect to the NEW client's detail page
-        setTimeout(() => {
-            if (clientId) {
-                router.push(`/clients/${clientId}`);
-            } else {
-                // Fallback if ID wasn't returned somehow
-                console.error('Client ID not found in response, redirecting to dashboard.');
-                router.push('/dashboard');
-            }
-        }, 2500); // Slightly longer delay for reading the message
-
-      } else {
-         // Handle errors (parse as text first to avoid JSON errors on non-JSON responses)
-         const responseText = await response.text();
-         let errorData;
-         try {
-           errorData = responseText ? JSON.parse(responseText) : {};
-         } catch {
-           errorData = { message: responseText || `HTTP error! status: ${response.status}` };
-         }
-         const errorMessage = 
-           errorData.error || 
-           errorData.message || 
-           errorData.details || 
-           `HTTP error! status: ${response.status}`;
-           
-         throw new Error(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage));
+      // Parse the response as text first
+      const responseText = await response.text();
+      
+      // Try to parse as JSON if possible
+      let errorData;
+      try {
+        errorData = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        // If JSON parsing fails, use the raw text
+        errorData = { message: responseText };
       }
+
+      if (!response.ok) {
+        // Handle different types of error responses
+        const errorMessage = 
+          errorData.error || 
+          errorData.message || 
+          errorData.details || 
+          `HTTP error! status: ${response.status}`;
+          
+        throw new Error(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage));
+      }
+
+      // Handle success - we've already parsed the response text
+      const result = responseText ? JSON.parse(responseText) : {};
+      setSuccess('Client added successfully! Redirecting to dashboard...');
+      console.log('Client created:', result);
+
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
 
     } catch (error: unknown) {
       console.error("Failed to create client:", error);
@@ -354,11 +351,11 @@ export default function NewClientPage() {
         {/* Submit Button */}
         <div className="flex items-center justify-between border-t pt-6">
           <button
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 disabled:cursor-not-allowed"
             type="submit"
-            className={`bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={isLoading}
           >
-            {isLoading ? 'Adding Client...' : 'Add Client'}
+            {isLoading ? 'Submitting...' : 'Add Client'}
           </button>
         </div>
       </form>

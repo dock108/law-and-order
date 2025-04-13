@@ -3,13 +3,6 @@ import { getServerSession } from 'next-auth/next';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 
-// Add type definition for params
-type Params = {
-  params: {
-    taskId: string;
-  };
-};
-
 // Zod schema for validating the request body for PATCH
 const taskUpdateSchema = z.object({
   status: z.string().optional(), // Allow updating only status for now
@@ -17,7 +10,7 @@ const taskUpdateSchema = z.object({
 });
 
 // PATCH /api/tasks/[taskId]
-export const PATCH = async (request: NextRequest, { params }: Params) => {
+export async function PATCH(request: Request, { params }) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -72,7 +65,7 @@ export const PATCH = async (request: NextRequest, { params }: Params) => {
   }
 }
 
-export const DELETE = async (request: NextRequest, { params }: Params) => {
+export async function DELETE(request: NextRequest, { params }) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -106,7 +99,7 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
   }
 }
 
-export const PUT = async (request: NextRequest, { params }: Params) => {
+export async function PUT(request: NextRequest, { params }) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

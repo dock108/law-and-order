@@ -30,28 +30,8 @@ interface ClientDetails extends Prisma.ClientGetPayload<{
 
 // Removed separate DocumentRecord interface
 
-// Format date for display (keep existing)
-function formatDate(dateString: string | Date | null | undefined): string {
-    if (!dateString) return 'Not provided';
-    try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    } catch {
-        return 'Invalid date';
-    }
-}
-
-// Format currency for display (keep existing)
-function formatCurrency(amount: number | null | undefined): string {
-    if (amount === null || amount === undefined) return 'Not provided';
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    }).format(amount);
+interface RouteParams {
+  params: { clientId: string };
 }
 
 // Updated fetch function to include both tasks and documents
@@ -78,12 +58,31 @@ async function getClientDetailsWithRelations(clientId: string, cookie: string): 
 
 // Removed getClientDocuments as it's included above
 
-// Use Next.js standard page component signature
-export default async function ClientDetailPage({
-    params
-}: {
-    params: { clientId: string }
-}) {
+// Format date for display (keep existing)
+function formatDate(dateString: string | Date | null | undefined): string {
+    if (!dateString) return 'Not provided';
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    } catch {
+        return 'Invalid date';
+    }
+}
+
+// Format currency for display (keep existing)
+function formatCurrency(amount: number | null | undefined): string {
+    if (amount === null || amount === undefined) return 'Not provided';
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+    }).format(amount);
+}
+
+export default async function ClientDetailPage({ params }: RouteParams) {
     const session = await getServerSession();
     if (!session) {
         redirect('/api/auth/signin');

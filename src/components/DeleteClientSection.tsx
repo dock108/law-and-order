@@ -113,7 +113,7 @@ export default function DeleteClientSection({ clientId, clientName }: DeleteClie
                 disabled={confirmationText !== requiredConfirmation || isLoading}
                 className={`font-bold py-2 px-4 rounded transition duration-150 ease-in-out shadow-md ${ 
                   (confirmationText !== requiredConfirmation || isLoading)
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    ? 'bg-red-300 text-white cursor-not-allowed'
                     : 'bg-red-600 hover:bg-red-700 text-white'
                 }`}
               >

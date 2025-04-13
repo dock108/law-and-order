@@ -4,26 +4,26 @@ import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { supabaseAdmin } from '@/lib/supabase'; // Import Supabase admin client
 
-type Params = {
-  params: {
-    clientId: string;
-  };
-};
+// Define the expected params structure
+interface RouteContext {
+    params: { clientId: string };
+}
 
 // 3. Retrieve Single Client (GET by ID)
-export const GET = async (req: NextRequest, { params }: Params) => {
+export async function GET(request: NextRequest, { params }: RouteContext) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { clientId } = params;
-  if (!clientId) {
-    return NextResponse.json({ error: 'Client ID is required' }, { status: 400 });
+
+  if (!clientId || typeof clientId !== 'string') {
+    return NextResponse.json({ error: 'Invalid Client ID' }, { status: 400 });
   }
 
   // Check for query parameters to include tasks and documents
-  const { searchParams } = new URL(req.url);
+  const { searchParams } = new URL(request.url);
   const includeTasks = searchParams.get('includeTasks') === 'true';
   const includeDocuments = searchParams.get('includeDocuments') === 'true';
 
@@ -76,7 +76,7 @@ export const GET = async (req: NextRequest, { params }: Params) => {
 }
 
 // 4. Client Update (PUT/PATCH - Placeholder)
-export const PUT = async (request: NextRequest, { params }: Params) => {
+export async function PUT(request: NextRequest, { params }: RouteContext) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -95,7 +95,7 @@ export const PUT = async (request: NextRequest, { params }: Params) => {
 }
 
 // 4. Client Delete (DELETE - Placeholder)
-export const DELETE = async (request: NextRequest, { params }: Params) => {
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -111,7 +111,7 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
 
   try {
     // Use a Prisma transaction to ensure all deletions succeed or fail together
-    await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // 1. Find related documents to get their Supabase paths
       const documentsToDelete = await tx.document.findMany({
         where: { clientId: clientId },
@@ -146,11 +146,12 @@ export const DELETE = async (request: NextRequest, { params }: Params) => {
 
       // 5. Delete the client record itself
       // This will trigger cascade deletes for related records if schema is configured
-      await tx.client.delete({
+      const deletedClient = await tx.client.delete({
         where: { id: clientId },
       });
       
       console.log(`Successfully deleted client ${clientId} from database.`);
+      return deletedClient; // Return value from transaction
     });
 
     // If transaction is successful

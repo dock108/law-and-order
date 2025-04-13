@@ -107,16 +107,13 @@ export default function TaskList({ initialTasks, clientId, onTaskUpdate, onTaskD
     setOpenDropdownTaskId(openDropdownTaskId === taskId ? null : taskId);
   };
 
-  // --- Open Modal Handler ---
+  // --- Updated handler to open the modal ---
   const handleOpenAutomationModal = (task: Task) => {
-    // Pass client ID from props to the selected task
-    const taskWithClientId = {
-      ...task,
-      clientId: clientId
-    };
-    console.log("Opening automation modal with task:", taskWithClientId);
-    setSelectedTask(taskWithClientId);
-    setIsModalOpen(true);
+      // Clear previous results/errors when opening modal
+      setAutomationResult(null);
+      setAutomationError(null);
+      setSelectedTask(task);
+      setIsModalOpen(true);
   };
 
   // --- Updated function to call the API --- 
@@ -303,12 +300,12 @@ export default function TaskList({ initialTasks, clientId, onTaskUpdate, onTaskD
                 setIsModalOpen(false);
             }
         }}
-        automationTask={selectedTask || { id: '', description: '', status: '', clientId }} 
+        automationTask={selectedTask || { id: '', description: '', status: '' }} 
       />
       {/* --- End Render Modal --- */}
     </>
   );
-} 
+}
 
 // Add named export alongside default export
 export { TaskList }; 
