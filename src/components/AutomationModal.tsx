@@ -12,6 +12,7 @@ interface Task {
     automationConfig?: string | null;
     requiresDocs?: boolean | null;
     status: string;
+    clientId?: string;
 }
 
 interface AutomationResult {
@@ -71,6 +72,14 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({ isOpen, onClos
     const [result, setResult] = React.useState<AutomationResult | null>(null);
     const [error, setError] = React.useState<string | null>(null);
 
+    // Log when automationTask changes to debug issues
+    React.useEffect(() => {
+        if (automationTask) {
+            console.log("AutomationModal received task:", automationTask);
+            console.log("ClientId present:", !!automationTask.clientId);
+        }
+    }, [automationTask]);
+
     React.useEffect(() => {
         if (isOpen) {
             setIsLoading(false);
@@ -86,14 +95,25 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({ isOpen, onClos
         setError(null);
         
         try {
+            // Check if clientId exists before making the request
+            if (!automationTask.clientId) {
+                console.error("Missing clientId in automation task:", automationTask);
+                throw new Error("Client ID is missing. Cannot perform automation.");
+            }
+            
+            // Log the payload for debugging
+            const payload = {
+                taskId: automationTask.id,
+                clientId: automationTask.clientId,
+                automationType: automationTask.automationType,
+                automationConfig: automationTask.automationConfig,
+            };
+            console.log("Sending automation request with payload:", payload);
+            
             const response = await fetch('/api/automation', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    taskId: automationTask.id,
-                    automationType: automationTask.automationType,
-                    automationConfig: automationTask.automationConfig,
-                }),
+                body: JSON.stringify(payload),
             });
             
             if (!response.ok) {
@@ -280,11 +300,12 @@ export const AutomationModal: React.FC<AutomationModalProps> = ({ isOpen, onClos
                     {!isLoading && !result && !error && (
                         <button
                             type="button"
-                            className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm transition duration-150"
+                            className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 ${!automationTask.clientId ? 'bg-indigo-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'} text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm transition duration-150`}
                             onClick={handleConfirm}
-                            disabled={isLoading}
+                            disabled={isLoading || !automationTask.clientId}
+                            title={!automationTask.clientId ? 'Client ID not loaded' : 'Begin automation'}
                         >
-                            Begin
+                            Begin {!automationTask.clientId && <span className="ml-1 text-xs">(Loading...)</span>}
                         </button>
                     )}
                     <button
