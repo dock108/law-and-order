@@ -76,7 +76,7 @@ export const GET = async (req: NextRequest, { params }: Params) => {
 }
 
 // 4. Client Update (PUT/PATCH - Placeholder)
-export async function PUT(request: NextRequest, { params }) {
+export const PUT = async (request: NextRequest, { params }: Params) => {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -95,7 +95,7 @@ export async function PUT(request: NextRequest, { params }) {
 }
 
 // 4. Client Delete (DELETE - Placeholder)
-export async function DELETE(request: NextRequest, { params }) {
+export const DELETE = async (request: NextRequest, { params }: Params) => {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

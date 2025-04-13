@@ -10,7 +10,7 @@ type Params = {
 };
 
 // GET single document
-export async function GET(request: NextRequest, { params }: Params) {
+export const GET = async (request: NextRequest, { params }: Params) => {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 }
 
 // DELETE a document
-export async function DELETE(request: NextRequest, { params }: Params) {
+export const DELETE = async (request: NextRequest, { params }: Params) => {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

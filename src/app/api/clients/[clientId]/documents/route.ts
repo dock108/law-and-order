@@ -30,7 +30,7 @@ const createDocumentSchema = z.object({
 const BUCKET_NAME = 'generated-documents'; // Match your Supabase bucket name
 
 // Corrected POST handler signature with proper typing
-export async function POST(request: NextRequest, { params }: Params) {
+export const POST = async (request: NextRequest, { params }: Params) => {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 }
 
 // Corrected GET handler signature with proper typing
-export async function GET(request: NextRequest, { params }: Params) {
+export const GET = async (request: NextRequest, { params }: Params) => {
     const session = await getServerSession();
     if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
