@@ -1,12 +1,11 @@
-'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import Link from 'next/link';
-import DocumentManager from '@/components/DocumentManager'; // We will create this next
-import TaskList from '@/components/TaskList'; // Import the TaskList component
+import DocumentManager from '@/components/DocumentManager';
+import TaskList from '@/components/TaskList';
 import { Task } from '@prisma/client';
 import ClientInfoCard from '@/components/ClientInfoCard';
 
@@ -47,16 +46,13 @@ interface RouteParams {
 }
 
 // Helper function to fetch client details - Updated to include tasks
-async function getClientDetailsWithTasks(clientId: string): Promise<ClientDetails | null> {
+async function getClientDetailsWithTasks(clientId: string, cookie: string): Promise<ClientDetails | null> {
     // Assume the API route /api/clients/[clientId] can include tasks
     // If not, we might need a separate fetch or adjust the API route
     const apiUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/clients/${clientId}?includeTasks=true`; 
+    console.log(`Fetching client ${clientId} details from ${apiUrl}`);
     try {
-        const response = await fetch(apiUrl, {
-            method: 'GET',
-            headers: { 'Cookie': headers().get('cookie') || '' },
-            cache: 'no-store',
-        });
+        const response = await fetch(apiUrl, { headers: { 'Cookie': cookie } });
         if (!response.ok) {
             if (response.status === 404) return null;
             console.error(`Failed to fetch client ${clientId} with tasks: ${response.status}`);
@@ -75,14 +71,11 @@ async function getClientDetailsWithTasks(clientId: string): Promise<ClientDetail
 }
 
 // Helper function to fetch client documents
-async function getClientDocuments(clientId: string): Promise<DocumentRecord[]> {
+async function getClientDocuments(clientId: string, cookie: string): Promise<DocumentRecord[]> {
     const apiUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/clients/${clientId}/documents`;
+    console.log(`Fetching client ${clientId} documents from ${apiUrl}`);
      try {
-        const response = await fetch(apiUrl, {
-            method: 'GET',
-            headers: { 'Cookie': headers().get('cookie') || '' },
-            cache: 'no-store',
-        });
+        const response = await fetch(apiUrl, { headers: { 'Cookie': cookie } });
         if (!response.ok) {
              console.error(`Failed to fetch documents for client ${clientId}: ${response.status}`);
             throw new Error(`Failed to fetch documents. Status: ${response.status}`);
@@ -124,11 +117,14 @@ export default async function ClientDetailPage({ params }: RouteParams) {
         redirect('/api/auth/signin');
     }
 
+    // Get cookie string using headers() here in the Server Component
+    const cookie = headers().get('cookie') || '';
+
     const { clientId } = params;
-    // Fetch client details *with* tasks
-    const client = await getClientDetailsWithTasks(clientId);
-    // Fetch documents separately (remains the same)
-    const initialDocuments = await getClientDocuments(clientId);
+    
+    // Fetch data *passing the cookie* to the utility functions
+    const client = await getClientDetailsWithTasks(clientId, cookie);
+    const initialDocuments = await getClientDocuments(clientId, cookie);
 
     if (!client) {
         return (
@@ -149,6 +145,17 @@ export default async function ClientDetailPage({ params }: RouteParams) {
             </div>
         );
     }
+
+    // Define handlers needed by Client Components (will be passed as props)
+    // These need to be defined outside the return, but their implementation might live in Client Components
+    const handleTaskUpdate = (updatedTask: Task) => {
+        console.log('Task updated (placeholder):', updatedTask);
+        // Logic to update state would live in TaskList (Client Component)
+    };
+    const handleDeleteTask = (taskId: string) => {
+        console.log('Task deleted (placeholder):', taskId);
+        // Logic to update state would live in TaskList (Client Component)
+    };
 
     return (
         <div className="min-h-screen bg-slate-100 py-8">
@@ -252,12 +259,17 @@ export default async function ClientDetailPage({ params }: RouteParams) {
                 <div className="mb-8 bg-white shadow-md rounded-lg border border-slate-200 overflow-hidden">
                     <div className="p-6">
                         <h2 className="text-xl font-semibold text-slate-800 mb-4">Tasks</h2>
-                        <TaskList initialTasks={client.tasks || []} clientId={clientId} />
+                        <TaskList 
+                            initialTasks={client.tasks || []} 
+                            clientId={client.id} 
+                            onTaskUpdate={handleTaskUpdate}
+                            onTaskDelete={handleDeleteTask}
+                        />
                     </div>
                 </div>
 
                 {/* Document Management Section - Handled by Client Component */}
-                <DocumentManager clientId={clientId} initialDocuments={initialDocuments} />
+                <DocumentManager clientId={client.id} initialDocuments={initialDocuments} />
             </div>
         </div>
     );

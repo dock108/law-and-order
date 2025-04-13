@@ -33,7 +33,6 @@ next-env.d.ts
 # Database
 # --------
 # Ignore SQLite database files
-*.db
 *.db-journal
 
 # Prisma
