@@ -7,6 +7,8 @@ import { headers } from 'next/headers';
 import Link from 'next/link';
 import DocumentManager from '@/components/DocumentManager'; // We will create this next
 import TaskList from '@/components/TaskList'; // Import the TaskList component
+import { Task } from '@prisma/client';
+import ClientInfoCard from '@/components/ClientInfoCard';
 
 interface Task {
   id: string;
@@ -116,7 +118,7 @@ function formatCurrency(amount: number | null | undefined): string {
     }).format(amount);
 }
 
-export default function ClientDetailPage({ params }: RouteParams) {
+export default async function ClientDetailPage({ params }: RouteParams) {
     const session = await getServerSession(authOptions);
     if (!session) {
         redirect('/api/auth/signin');
