@@ -3,16 +3,12 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { supabaseAdmin } from '@/lib/supabase';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import fs from 'fs/promises';
-import path from 'path';
 import {
   generateDocumentFromTemplate,
   prepareTemplateData,
-  processMarkdownForPDF,
 } from '@/lib/templates';
 import { generateTasksForClient } from '@/lib/tasks';
+import { generateAndStorePdf } from '@/lib/documents';
 
 // Zod schema for validating the request body for client creation
 const clientSchema = z.object({
@@ -31,7 +27,6 @@ const clientSchema = z.object({
 
 // Added Constants
 const DEFAULT_ONBOARDING_TEMPLATES = ['demand-letter', 'representation-letter']; // Add more as needed
-const BUCKET_NAME = 'generated-documents'; // Match Supabase bucket name
 
 // 1. Client Creation (POST)
 export async function POST(request: Request) {
@@ -82,82 +77,14 @@ export async function POST(request: Request) {
             const templateData = prepareTemplateData(newClient); // Use the newly created client data
             const generatedContent = await generateDocumentFromTemplate(templateName, templateData);
 
-            // Process Markdown to remove syntax characters
-            const { processedText } = processMarkdownForPDF(generatedContent);
-
-            // Step 2b: Load Letterhead and Generate PDF
-            const letterheadPath = path.resolve('./src/assets/v1_Colacci-Letterhead.pdf');
-            const letterheadBytes = await fs.readFile(letterheadPath);
-            const pdfDoc = await PDFDocument.load(letterheadBytes);
-            const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-            const pages = pdfDoc.getPages();
-            const firstPage = pages[0];
-            const { width, height } = firstPage.getSize();
-            const marginTop = 100, marginBottom = 50, marginLeft = 72, marginRight = 72;
-            const fontSize = 11, lineHeight = 15;
-            const usableWidth = width - marginLeft - marginRight;
-
-            // Basic text splitting (same as in the other route)
-            const approxCharsPerLine = Math.floor(usableWidth / (fontSize * 0.6)); 
-            const words = processedText.split(/\s+/);
-            const lines: string[] = [];
-            let currentLine = '';
-            for (const word of words) {
-                const testLine = currentLine ? `${currentLine} ${word}` : word;
-                if (testLine.length < approxCharsPerLine || currentLine === '') {
-                    currentLine = testLine;
-                } else {
-                    lines.push(currentLine);
-                    currentLine = word;
-                }
-            }
-            if (currentLine) lines.push(currentLine);
-
-            // Draw text
-            let cursorY = height - marginTop;
-            let currentPageIndex = 0;
-            let currentPage = pages[currentPageIndex];
-            for (const line of lines) {
-                if (cursorY < marginBottom) {
-                    currentPageIndex++;
-                    if (currentPageIndex < pages.length) {
-                        currentPage = pages[currentPageIndex];
-                        cursorY = currentPage.getSize().height - marginTop;
-                    } else {
-                        currentPage = pdfDoc.addPage([width, height]);
-                        cursorY = height - marginTop;
-                        pages.push(currentPage);
-                    }
-                }
-                currentPage.drawText(line, { x: marginLeft, y: cursorY, font: helveticaFont, size: fontSize, color: rgb(0, 0, 0) });
-                cursorY -= lineHeight;
-            }
-            
-            const pdfBytes = await pdfDoc.save();
-            const pdfArrayBuffer = pdfBytes.buffer;
-
-            // Step 2c: Upload to Supabase
-            const timestamp = Date.now();
-            const sanitizedDocType = templateName.replace(/[^a-z0-9\-_]/gi, '_');
-            const filePath = `client_${newClient.id}/${sanitizedDocType}_${timestamp}.pdf`;
-
-            const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-              .from(BUCKET_NAME)
-              .upload(filePath, pdfArrayBuffer, { contentType: 'application/pdf', upsert: false });
-
-            if (uploadError) throw uploadError; // Throw error to be caught below
-            if (!uploadData?.path) throw new Error('Supabase upload failed: No path returned.');
-
-            // Step 2d: Create Document record in Prisma
-            const dbDoc = await prisma.document.create({
-              data: {
+            // Call the refactored function
+            const result = await generateAndStorePdf({
+                markdownContent: generatedContent,
                 clientId: newClient.id,
                 documentType: templateName,
-                fileUrl: uploadData.path,
-              },
             });
-            console.log(`Successfully generated and stored ${templateName} (ID: ${dbDoc.id})`);
-            generatedDocsInfo.push({ documentType: templateName, documentId: dbDoc.id });
+
+            generatedDocsInfo.push({ documentType: templateName, documentId: result.documentId, filePath: result.filePath });
 
         } catch (docError: any) {
             // Log error for this specific document but continue to next template
@@ -215,12 +142,8 @@ export async function POST(request: Request) {
 
     // Determine if the error happened *after* client creation
     let specificErrorMessage = 'Internal Server Error during client processing.';
-    if (error.message.includes('generateDocumentFromTemplate') || error.message.includes('processMarkdownForPDF') || error.message.includes('PDFDocument.load') || error.message.includes('fs.readFile')) {
-        specificErrorMessage = 'Failed during document generation.';
-    } else if (error.message.includes('supabaseAdmin.storage') || error.message.includes('upload failed')) {
-        specificErrorMessage = 'Failed to upload document to storage.';
-    } else if (error.message.includes('prisma.document.create')) {
-        specificErrorMessage = 'Failed to save document record to database.';
+    if (error.message.includes('generateDocumentFromTemplate') || error.message.includes('generateAndStorePdf')) {
+        specificErrorMessage = 'Failed during document generation/storage.';
     } else if (error.message.includes('generateTasksForClient') || error.message.includes('prisma.task.createMany')) {
         specificErrorMessage = 'Failed during task generation or saving.';
     }
@@ -256,15 +179,26 @@ export async function GET(request: Request) {
     if (includeTasks) {
         findOptions.include = {
             tasks: {
-                orderBy: {
-                    // Order tasks, e.g., by due date (nulls last), then creation date
-                    dueDate: 'asc', 
+                select: {
+                    id: true,
+                    description: true,
+                    dueDate: true,
+                    status: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    notes: true,
+                    clientId: true,
+                    automationType: true,
+                    automationConfig: true,
+                    requiresDocs: true,
                 },
-                // Optionally limit the number of tasks returned per client for dashboard performance
-                // take: 10, 
+                orderBy: [
+                    { dueDate: { sort: 'asc', nulls: 'last' } },
+                    { createdAt: 'asc' }
+                ],
             },
         };
-        console.log("Fetching clients with included tasks...");
+        console.log("Fetching clients with included tasks (including automation fields)...");
     } else {
         console.log("Fetching clients without tasks...");
     }
@@ -272,24 +206,38 @@ export async function GET(request: Request) {
     const clients = await prisma.client.findMany(findOptions);
 
     // Manually process the clients array to ensure Dates are strings
-    // This is crucial for proper serialization across boundaries
-    const serializableClients = clients.map(client => ({
-      ...client,
-      // Ensure Date objects are converted to ISO strings
-      onboardedAt: client.onboardedAt.toISOString(),
-      updatedAt: client.updatedAt.toISOString(), 
-      // If medicalExpenses (Decimal) was fetched, convert it:
-      // medicalExpenses: client.medicalExpenses?.toString(),
-      
-      // Process tasks if they were included
-      tasks: includeTasks && client.tasks ? client.tasks.map(task => ({
-          ...task,
-          // Ensure Date objects in tasks are converted to ISO strings
-          dueDate: task.dueDate?.toISOString() || null,
-          createdAt: task.createdAt.toISOString(),
-          updatedAt: task.updatedAt.toISOString(),
-      })) : [], // Return empty array if tasks weren't included or don't exist
-    }));
+    // The processing of tasks needs to be adjusted if using `select`
+    const serializableClients = clients.map(client => {
+        // Ensure client fields are serialized correctly
+        const serializedClientBase = {
+            ...client,
+            onboardedAt: client.onboardedAt.toISOString(),
+            updatedAt: client.updatedAt.toISOString(),
+        };
+        // Remove tasks if they exist due to `include` before re-adding selected fields
+        delete (serializedClientBase as any).tasks;
+
+        // Process tasks if they were included and selected
+        const serializedTasks = includeTasks && client.tasks ? client.tasks.map(task => ({
+            // Map only the selected fields
+            id: task.id,
+            description: task.description,
+            dueDate: task.dueDate?.toISOString() || null,
+            status: task.status,
+            createdAt: task.createdAt.toISOString(),
+            updatedAt: task.updatedAt.toISOString(),
+            notes: task.notes,
+            clientId: task.clientId,
+            automationType: task.automationType,
+            automationConfig: task.automationConfig,
+            requiresDocs: task.requiresDocs,
+        })) : [];
+
+        return {
+            ...serializedClientBase,
+            tasks: serializedTasks, // Add the correctly serialized tasks back
+        };
+    });
 
     return NextResponse.json(serializableClients); // Return the processed array
 

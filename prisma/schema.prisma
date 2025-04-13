@@ -54,6 +54,12 @@ model Task {
   dueDate       DateTime?
   status        String   @default("Pending") // Pending, In Progress, Completed, Overdue
   notes         String?  // Optional field for task-specific notes
+
+  // Automation Fields
+  automationType    String?  // e.g., EMAIL_DRAFT, CHATGPT_SUGGESTION, DOC_GENERATION
+  requiresDocs      Boolean? // Does the automation need specific documents?
+  automationConfig  String?  // JSON string or specific config (e.g., template name)
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

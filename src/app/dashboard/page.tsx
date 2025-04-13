@@ -13,6 +13,9 @@ interface Task {
   dueDate: string | null; // Dates are often serialized as strings
   status: string;
   createdAt: string;
+  automationType?: string | null;
+  requiresDocs?: boolean | null;
+  automationConfig?: string | null;
 }
 
 interface Client {
