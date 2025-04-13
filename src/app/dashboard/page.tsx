@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers'; // Import headers to pass cookies
 import TaskList from '@/components/TaskList'; // Import the new client component
@@ -45,7 +44,7 @@ const formatDate = (dateString: string | null): string => {
 // Updated function to fetch clients with their tasks
 // Now accepts cookie string as an argument
 async function getClientsWithTasks(cookie: string): Promise<Client[]> {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session) {
     // Redirect should ideally happen before calling this, 
     // but kept here as a safeguard. Consider moving session check outside.
@@ -85,7 +84,7 @@ async function getClientsWithTasks(cookie: string): Promise<Client[]> {
 // Make the page component async
 export default async function DashboardPage() {
   // Perform session check at the top level if desired
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session) { redirect('/api/auth/signin'); }
 
   // Read cookie at the top level of the Server Component

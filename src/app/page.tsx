@@ -1,9 +1,8 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'; // Adjust path if needed
 
 export default async function RootPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
 
   if (session) {
     // User is logged in, redirect to the dashboard
