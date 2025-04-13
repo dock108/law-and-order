@@ -70,7 +70,7 @@ export default function NewClientPage() {
       let errorData;
       try {
         errorData = responseText ? JSON.parse(responseText) : {};
-      } catch (_) {
+      } catch {
         // If JSON parsing fails, use the raw text
         errorData = { message: responseText };
       }
