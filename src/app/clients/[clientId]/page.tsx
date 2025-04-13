@@ -30,10 +30,28 @@ interface ClientDetails extends Prisma.ClientGetPayload<{
 
 // Removed separate DocumentRecord interface
 
-// Define props interface for the page component
-interface ClientDetailPageProps {
-    params: { clientId: string };
-    // searchParams?: { [key: string]: string | string[] | undefined };
+// Format date for display (keep existing)
+function formatDate(dateString: string | Date | null | undefined): string {
+    if (!dateString) return 'Not provided';
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    } catch {
+        return 'Invalid date';
+    }
+}
+
+// Format currency for display (keep existing)
+function formatCurrency(amount: number | null | undefined): string {
+    if (amount === null || amount === undefined) return 'Not provided';
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+    }).format(amount);
 }
 
 // Updated fetch function to include both tasks and documents
@@ -60,39 +78,19 @@ async function getClientDetailsWithRelations(clientId: string, cookie: string): 
 
 // Removed getClientDocuments as it's included above
 
-// Format date for display (keep existing)
-function formatDate(dateString: string | Date | null | undefined): string {
-    if (!dateString) return 'Not provided';
-    try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    } catch {
-        return 'Invalid date';
-    }
-}
-
-// Format currency for display (keep existing)
-function formatCurrency(amount: number | null | undefined): string {
-    if (amount === null || amount === undefined) return 'Not provided';
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    }).format(amount);
-}
-
-// Use the defined interface for props
-export default async function ClientDetailPage({ params }: ClientDetailPageProps) {
+// Use Next.js standard page component signature
+export default async function ClientDetailPage({
+    params
+}: {
+    params: { clientId: string }
+}) {
     const session = await getServerSession();
     if (!session) {
         redirect('/api/auth/signin');
     }
 
     const cookie = headers().get('cookie') || '';
-    const { clientId } = params; // Access clientId from the correctly typed params
+    const { clientId } = params;
     
     // Use the combined fetch function
     const client = await getClientDetailsWithRelations(clientId, cookie);

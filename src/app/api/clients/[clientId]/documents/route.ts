@@ -12,6 +12,13 @@ import {
   processMarkdownForPDF,
 } from '@/lib/templates';
 
+// Define params type for route handlers
+type Params = {
+  params: {
+    clientId: string;
+  };
+};
+
 // RouteParams interface removed
 
 // Zod schema for the request body
@@ -22,8 +29,8 @@ const createDocumentSchema = z.object({
 
 const BUCKET_NAME = 'generated-documents'; // Match your Supabase bucket name
 
-// Corrected POST handler signature (removed type annotation for { params })
-export async function POST(request: NextRequest, { params }) {
+// Corrected POST handler signature with proper typing
+export async function POST(request: NextRequest, { params }: Params) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -192,8 +199,8 @@ export async function POST(request: NextRequest, { params }) {
   }
 }
 
-// Corrected GET handler signature (removed type annotation for { params })
-export async function GET(request: NextRequest, { params }) {
+// Corrected GET handler signature with proper typing
+export async function GET(request: NextRequest, { params }: Params) {
     const session = await getServerSession();
     if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

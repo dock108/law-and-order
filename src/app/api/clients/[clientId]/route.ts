@@ -4,21 +4,26 @@ import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { supabaseAdmin } from '@/lib/supabase'; // Import Supabase admin client
 
+type Params = {
+  params: {
+    clientId: string;
+  };
+};
+
 // 3. Retrieve Single Client (GET by ID)
-export async function GET(request: NextRequest, { params }) {
+export const GET = async (req: NextRequest, { params }: Params) => {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { clientId } = params;
-
-  if (!clientId || typeof clientId !== 'string') {
-    return NextResponse.json({ error: 'Invalid Client ID' }, { status: 400 });
+  if (!clientId) {
+    return NextResponse.json({ error: 'Client ID is required' }, { status: 400 });
   }
 
   // Check for query parameters to include tasks and documents
-  const { searchParams } = new URL(request.url);
+  const { searchParams } = new URL(req.url);
   const includeTasks = searchParams.get('includeTasks') === 'true';
   const includeDocuments = searchParams.get('includeDocuments') === 'true';
 
