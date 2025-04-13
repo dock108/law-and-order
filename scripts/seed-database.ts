@@ -65,24 +65,23 @@ function getTasksForCaseType(caseType, count) {
   const specificTasks = taskTemplates[caseType] || [];
   const defaultTasks = taskTemplates['default'];
   
-  // Combine specific and default tasks, then select randomly
-  const allPossibleTasks = [...specificTasks, ...defaultTasks];
+  // Ensure "Initial client consultation" is always included if possible
+  let combinedTasks = [...new Set([...specificTasks, ...defaultTasks])]; // Unique tasks
+  const initialConsultTask = 'Initial client consultation';
+  if (!combinedTasks.includes(initialConsultTask)) {
+      combinedTasks.unshift(initialConsultTask); // Add to beginning if missing
+  }
+
+  // Select randomly up to the count, prioritizing the initial consult if needed
   const selectedTasks = [];
+  if (combinedTasks.includes(initialConsultTask)) {
+      selectedTasks.push(initialConsultTask);
+      combinedTasks = combinedTasks.filter(t => t !== initialConsultTask);
+  }
   
-  // Get random tasks up to the count
-  for (let i = 0; i < count; i++) {
-    const randomIndex = Math.floor(Math.random() * allPossibleTasks.length);
-    const task = allPossibleTasks[randomIndex];
-    
-    // Avoid duplicates
-    if (!selectedTasks.includes(task)) {
-      selectedTasks.push(task);
-    } else {
-      i--; // Try again if we selected a duplicate
-    }
-    
-    // Break if we've exhausted the task list
-    if (selectedTasks.length === allPossibleTasks.length) break;
+  while (selectedTasks.length < count && combinedTasks.length > 0) {
+    const randomIndex = Math.floor(Math.random() * combinedTasks.length);
+    selectedTasks.push(combinedTasks.splice(randomIndex, 1)[0]);
   }
   
   return selectedTasks.slice(0, count);
@@ -145,6 +144,50 @@ async function seed() {
       else if (statusRandom < 0.7) status = 'In Progress';
       else if (statusRandom < 0.9) status = 'Completed';
       else status = 'Overdue';
+
+      // --- Add Automation Data based on description ---
+      let automationType = null;
+      let requiresDocs = null;
+      let automationConfig = null;
+
+      if (description === 'Initial client consultation') {
+        automationType = 'INITIAL_CONSULT';
+        requiresDocs = false;
+        automationConfig = 'consult_prep';
+      } else if (description === 'Send demand letter' || description === 'Draft demand letter') {
+        automationType = 'DOC_GENERATION';
+        requiresDocs = true;
+        automationConfig = 'demand-letter';
+      } else if (description === 'Contact insurance company') {
+        automationType = 'EMAIL_DRAFT';
+        requiresDocs = false;
+        automationConfig = 'insurance_contact';
+      } else if (description.startsWith('Research similar')) {
+        automationType = 'CHATGPT_SUGGESTION';
+        requiresDocs = false;
+        automationConfig = 'case_law_research';
+      } else if (description === 'Research applicable laws') {
+        automationType = 'CHATGPT_SUGGESTION';
+        requiresDocs = false;
+        automationConfig = 'legal_research';
+      } else if (description === 'Follow up with client') {
+        automationType = 'EMAIL_DRAFT';
+        requiresDocs = false;
+        automationConfig = 'client_follow_up';
+      } else if (description === 'Interview witnesses') {
+        automationType = 'INITIAL_CONSULT';
+        requiresDocs = false;
+        automationConfig = 'witness_interview_prep';
+      } else if (description === 'Collect evidence') {
+        automationType = 'CHATGPT_SUGGESTION';
+        requiresDocs = false;
+        automationConfig = 'evidence_checklist';
+      } else if (description === 'Obtain medical records') {
+        automationType = 'DOC_GENERATION';
+        requiresDocs = true;
+        automationConfig = 'medical_records_request';
+      }
+      // --- End Automation Data ---
       
       const task = await prisma.task.create({
         data: {
@@ -153,10 +196,14 @@ async function seed() {
           dueDate,
           status,
           notes: Math.random() > 0.7 ? faker.lorem.paragraph() : null,
+          // Add the automation fields
+          automationType,
+          requiresDocs,
+          automationConfig,
         }
       });
       
-      console.log(`  Created task: ${task.description}`);
+      console.log(`  Created task: ${task.description}${automationType ? ' (with automation)' : ''}`);
     }
     
     // Create 1-3 documents for some clients (70% chance)
