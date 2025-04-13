@@ -99,7 +99,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { taskI
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { taskId: string } }) {
+export async function PUT(request: NextRequest, { params }) {
   const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
