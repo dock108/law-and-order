@@ -2,13 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import {
-  generateDocumentFromTemplate,
-  prepareTemplateData,
-} from '@/lib/templates';
 import { generateTasksForClient } from '@/lib/tasks';
 import { generateAndStoreInitialDocuments } from '@/lib/templates';
-import { Task, Prisma } from '@prisma/client';
+import { Prisma, Client as PrismaClient } from '@prisma/client';
 
 // Zod schema for validating the request body for client creation
 const clientSchema = z.object({
@@ -25,6 +21,19 @@ const clientSchema = z.object({
   verbalQuality: z.string().min(1, { message: 'Verbal Quality is required' }),
 });
 
+// Define types for the return values of helper functions
+interface TaskGenerationResult {
+    count?: number;
+    error?: string;
+}
+
+interface DocumentGenerationResult {
+    documentType: string;
+    documentId: string;
+    filePath: string;
+    error?: string; // Add potential error field if needed
+}
+
 // 1. Client Creation (POST)
 export async function POST(request: NextRequest) {
   const session = await getServerSession();
@@ -32,7 +41,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let newClient: Prisma.ClientGetPayload<{}> | null = null; // Type Prisma client
+  let newClient: PrismaClient | null = null; // Use the imported PrismaClient type
 
   try {
     const rawData = await request.json();
@@ -66,7 +75,7 @@ export async function POST(request: NextRequest) {
     console.log(`Client ${newClient.id} created successfully. Proceeding to task and document generation.`);
 
     // --- START: Generate Tasks (using refactored function) ---
-    let generatedTasksInfo: any = { count: 0 }; // Initialize task info object
+    let generatedTasksInfo: TaskGenerationResult = { count: 0 }; // Use defined type
     try {
       // Pass the necessary fields from the *validated* and *created* client data
       const tasksToCreate = await generateTasksForClient(newClient.id, { 
@@ -92,7 +101,7 @@ export async function POST(request: NextRequest) {
     // --- END: Generate Tasks ---
 
     // --- START: Generate Initial Documents (using new function) ---
-    let generatedDocsInfo: any[] = []; // Initialize doc info array
+    let generatedDocsInfo: DocumentGenerationResult[] = []; // Use defined type
     try {
         // Pass the newly created client object (which includes id, caseType, etc.)
         generatedDocsInfo = await generateAndStoreInitialDocuments(newClient);
@@ -102,7 +111,7 @@ export async function POST(request: NextRequest) {
         // but good for catching unexpected failures in the function call itself.
         console.error(`Error during initial document generation process for client ${newClient.id}:`, docError);
         // Add error info if needed for the response
-        generatedDocsInfo = [{ error: "Document generation process failed." }];
+        generatedDocsInfo = [{ documentType: 'Error', documentId: 'N/A', filePath: 'N/A', error: "Document generation process failed." }];
     }
     // --- END: Generate Initial Documents ---
 
