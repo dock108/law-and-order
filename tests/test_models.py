@@ -3,10 +3,9 @@
 import datetime
 
 import pytest
+from pi_auto.db.models import Base, Client, Doc, Incident, Insurance, Provider, Task
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
-from pi_auto.db.models import Base, Client, Doc, Incident, Insurance, Provider, Task
 
 # Set up in-memory SQLite for testing
 TEST_DATABASE_URL = "sqlite:///:memory:"

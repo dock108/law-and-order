@@ -23,16 +23,6 @@ repos:
 
   - repo: local
     hooks:
-      - id: isort-local
-        name: isort
-        entry: isort
-        language: system
-        types: [python]
-        args: ["--profile", "black", "--filter-files"]
-        stages: [pre-commit]
-
-  - repo: local
-    hooks:
       - id: pytest
         name: pytest
         entry: bash -c 'pip install pytest-asyncio asyncpg greenlet -e . && python -m pytest'

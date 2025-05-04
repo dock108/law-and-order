@@ -6,7 +6,6 @@ from unittest import mock
 import asyncpg
 import pytest
 import pytest_asyncio
-
 from pi_auto.db import (
     close_connection_pool,
     execute_query,
