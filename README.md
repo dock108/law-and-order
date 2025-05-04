@@ -1,6 +1,7 @@
 # Personal Injury Automation
 
 [![CI](https://github.com/law-and-order/pi-auto/actions/workflows/ci.yml/badge.svg)](https://github.com/law-and-order/pi-auto/actions/workflows/ci.yml)
+[![API Docs](https://img.shields.io/badge/API-Docs-blue)](https://github.com/law-and-order/pi-auto/actions)
 
 A comprehensive set of tools for automating personal injury case management and workflows.
 
@@ -35,6 +36,33 @@ poetry shell
 ```bash
 pytest
 ```
+
+## API
+
+### Run the API locally
+
+The PI Automation API provides a RESTful interface for managing personal injury cases.
+
+1. Set up environment variables (create a `.env` file in the project root):
+
+```bash
+SUPABASE_URL=postgresql://user:password@localhost:5432/dbname
+SUPABASE_KEY=your-supabase-key
+DOCASSEMBLE_URL=http://localhost:5000
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
+```
+
+2. Start the API server:
+
+```bash
+poetry run uvicorn pi_auto_api.main:app --reload
+```
+
+3. Access the API documentation at http://localhost:8000/docs
+
+4. Health endpoints:
+   - `/healthz` - Simple health check
+   - `/readyz` - Deep health check (database and Docassemble connectivity)
 
 ## Development
 

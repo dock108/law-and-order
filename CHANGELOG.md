@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-05-05
+### Added
+- FastAPI skeleton with health and readiness endpoints.
+- Config module using pydantic-settings for environment variables management.
+- Basic middleware for CORS and request ID tracking.
+- Unit tests for API endpoints with mocking.
+- GitHub Actions job for testing the API.
+- CLI entry point for running the API (`pi-auto-api`).
+- Updated README with API usage instructions.
+- X-Request-ID header added to all requests/responses for tracing.
+
+### Changed
+- Updated dependencies to include FastAPI, Uvicorn, and HTTPX.
+- Added API badge to README.
+
 ## [0.5.0] - 2025-05-05
 ### Added
 - Retainer agreement interview in Docassemble.

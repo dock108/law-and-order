@@ -11,9 +11,19 @@ import os
 
 import requests
 from flask import Flask, Response, jsonify, request
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.exceptions import BadRequest, InternalServerError
 
 app = Flask(__name__)
+
+# Configure rate limiting
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri=os.environ.get("RATE_LIMIT_STORAGE", "memory://"),
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,6 +39,7 @@ def health_check():
 
 
 @app.route("/api/v1/generate/retainer", methods=["POST"])
+@limiter.limit("10 per minute")
 def generate_retainer():
     """
     Generate a retainer agreement PDF from JSON data.
