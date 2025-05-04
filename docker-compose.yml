@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - DOCASSEMBLE_URL=${DOCASSEMBLE_URL}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    command: uvicorn pi_auto_api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379"
+    networks:
+      - pi-network
+    volumes:
+      - redis-data:/data
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/app
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - DOCASSEMBLE_URL=${DOCASSEMBLE_URL}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    command: celery -A pi_auto_api.tasks worker --loglevel=INFO
+    networks:
+      - pi-network
+
+networks:
+  pi-network:
+    driver: bridge
+
+volumes:
+  redis-data:

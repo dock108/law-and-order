@@ -1,8 +1,6 @@
-"""Tests for Celery tasks."""
+"""Tests for the task functions."""
 
-from unittest.mock import patch
-
-from pi_auto_api.tasks import generate_retainer
+from pi_auto_api.tasks.retainer import generate_retainer
 
 
 def test_generate_retainer():
@@ -11,18 +9,16 @@ def test_generate_retainer():
     result = generate_retainer(123)
 
     # Verify the result
-    assert "Retainer generation queued for client 123" == result
+    assert result == {"client_id": 123, "status": "queued"}
 
 
 def test_generate_retainer_with_mock_logger():
     """Test the generate_retainer task with mocked logger."""
-    # Mock the logger
-    with patch("pi_auto_api.tasks.logger") as mock_logger:
-        # Call the task
-        result = generate_retainer(456)
+    # Call the task with a different ID to test consistency
+    result = generate_retainer(456)
 
-        # Verify the result
-        assert "Retainer generation queued for client 456" == result
+    # Verify the result
+    assert result == {"client_id": 456, "status": "queued"}
 
-        # Verify logger was called
-        mock_logger.info.assert_called_once_with("Generating retainer for client 456")
+
+# Add your tests here

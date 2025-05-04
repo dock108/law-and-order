@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2025-05-10
+### Added
+- Celery + Redis background queue for asynchronous tasks
+- Redis service with docker-compose integration
+- Celery worker service for processing background tasks
+- Enhanced retainer generation task that runs asynchronously
+- Updated CI workflow to test Celery integration
+- Extended documentation with sequence diagrams in FLOWS.md
+- Unit and integration tests for the task queue
+
 ## [0.7.0] - 2025-05-05
 ### Added
 - Client intake endpoint (`/intake`) to store client and incident data

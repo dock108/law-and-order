@@ -18,6 +18,7 @@ class Settings(BaseSettings):
         SUPABASE_KEY: API key for Supabase
         DOCASSEMBLE_URL: URL of the Docassemble API
         ALLOWED_ORIGINS: List of allowed origins for CORS
+        REDIS_URL: Connection URL for Redis
     """
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
@@ -31,6 +32,9 @@ class Settings(BaseSettings):
 
     # CORS settings
     ALLOWED_ORIGINS: str = "*"  # Default to allow all origins in dev
+
+    # Redis settings
+    REDIS_URL: str = "redis://redis:6379/0"  # Default to Redis container
 
     @field_validator("ALLOWED_ORIGINS")
     def assemble_cors_origins(cls, v: str) -> List[str]:

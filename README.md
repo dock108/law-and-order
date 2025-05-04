@@ -233,3 +233,27 @@ docker compose down
 ```
 
 The `templates/` directory is mounted inside the Docassemble container at `/usr/share/docassemble/files/templates`, making all your templates available for use in interviews and document generation.
+
+## Running Celery
+
+The API uses Celery with Redis for background task processing.
+
+### Start the Redis and Celery worker
+
+Using docker-compose:
+
+```bash
+docker compose up redis celery_worker
+```
+
+Or run just the Celery worker:
+
+```bash
+poetry run celery -A pi_auto_api.tasks worker --loglevel=INFO
+```
+
+Background tasks like generating retainer agreements and sending them for e-signature are handled asynchronously by Celery workers.
+
+### Task Types
+
+- `generate_retainer`: Generates a retainer agreement for a client and submits it for e-signature

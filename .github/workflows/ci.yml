@@ -25,6 +25,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
     - uses: actions/checkout@v4
@@ -72,12 +81,13 @@ jobs:
       run: |
         source .venv/bin/activate
         # Start Celery worker in background
-        celery --app pi_auto_api.tasks:app worker --pool=solo -Q test -c 1 > celery.log 2>&1 &
+        celery --app pi_auto_api.tasks:app worker --pool=solo -Q default -c 1 > celery.log 2>&1 &
         echo "Celery worker started in background"
       env:
         SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
         SUPABASE_KEY: dummy-key
         DOCASSEMBLE_URL: http://localhost:5000
+        REDIS_URL: redis://localhost:6379/0
 
     - name: Run Alembic migrations
       run: |
@@ -111,6 +121,7 @@ jobs:
         # Environment variables needed by the application/tests if they read .env
         SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
         SUPABASE_KEY: dummy-key
+        REDIS_URL: redis://localhost:6379/0
 
     - name: Run pre-commit hooks
       run: |
@@ -131,6 +142,15 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -165,6 +185,7 @@ jobs:
         SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
         SUPABASE_KEY: dummy-key
         DOCASSEMBLE_URL: http://localhost:5000
+        REDIS_URL: redis://localhost:6379/0
 
     - name: Run API tests
       run: |
@@ -174,6 +195,7 @@ jobs:
         SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
         SUPABASE_KEY: dummy-key
         DOCASSEMBLE_URL: http://localhost:5000
+        REDIS_URL: redis://localhost:6379/0
 
   docassemble:
     runs-on: ubuntu-latest

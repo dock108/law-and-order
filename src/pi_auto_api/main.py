@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 from pi_auto_api.config import settings
 from pi_auto_api.db import create_intake
 from pi_auto_api.schemas import IntakePayload, IntakeResponse
-from pi_auto_api.tasks import generate_retainer
+from pi_auto_api.tasks.retainer import generate_retainer
 
 # Configure logging
 logging.basicConfig(
