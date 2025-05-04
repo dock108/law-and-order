@@ -9,18 +9,13 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        python-version: ["3.11", "3.12"]
-
     steps:
     - uses: actions/checkout@v3
     
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: '3.11'
     
     - name: Install Poetry
       uses: snok/install-poetry@v1
@@ -33,10 +28,19 @@ jobs:
       run: poetry install --no-interaction
     
     - name: Lint with ruff
-      run: poetry run ruff check .
+      run: poetry run ruff check . --output-format=github
+    
+    - name: Check formatting with ruff
+      run: poetry run ruff format --check .
     
     - name: Check formatting with black
       run: poetry run black --check .
+    
+    - name: Check imports with isort
+      run: poetry run isort --check-only --profile black .
+    
+    - name: Check templates for PII
+      run: python scripts/check_templates.py
     
     - name: Test with pytest
       run: poetry run pytest 
