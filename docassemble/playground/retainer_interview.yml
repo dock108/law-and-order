@@ -1,0 +1,170 @@
+---
+metadata:
+  title: Retainer Agreement Generator
+  short title: Retainer Agreement
+  description: Generates a retainer agreement based on client information.
+  authors:
+    - name: Law & Order
+      organization: Law & Order LLP
+---
+modules:
+  - docassemble.base.util
+  - docassemble.webapp.data
+---
+objects:
+  - client: Individual
+  - incident: DAObject
+  - attorney: Individual
+  - firm: Address
+  - fee: DAObject
+  - today: DAObject
+---
+code: |
+  # Initialize today's date
+  import datetime
+  today.date = datetime.datetime.now().strftime("%B %d, %Y")
+
+  # Set default values for any missing fields that would be passed in via API
+  if not hasattr(client, 'full_name'):
+    client.full_name = ''
+  if not hasattr(client, 'address'):
+    client.address = ''
+  if not hasattr(client, 'city'):
+    client.city = ''
+  if not hasattr(client, 'state'):
+    client.state = ''
+  if not hasattr(client, 'zip'):
+    client.zip = ''
+
+  if not hasattr(incident, 'type'):
+    incident.type = ''
+  if not hasattr(incident, 'date'):
+    incident.date = ''
+  if not hasattr(incident, 'location'):
+    incident.location = ''
+
+  if not hasattr(attorney, 'full_name'):
+    attorney.full_name = ''
+
+  if not hasattr(firm, 'address'):
+    firm.address = ''
+  if not hasattr(firm, 'city'):
+    firm.city = ''
+  if not hasattr(firm, 'state'):
+    firm.state = ''
+  if not hasattr(firm, 'zip'):
+    firm.zip = ''
+
+  if not hasattr(fee, 'percentage'):
+    fee.percentage = ''
+---
+# This block ensures we only ask questions if fields are missing and we're not in API mode
+mandatory: True
+code: |
+  if interface() != 'json':
+    if not client.full_name:
+      client.full_name
+    if not client.address:
+      client.address
+    if not client.city:
+      client.city
+    if not client.state:
+      client.state
+    if not client.zip:
+      client.zip
+    if not incident.type:
+      incident.type
+    if not incident.date:
+      incident.date
+    if not incident.location:
+      incident.location
+    if not attorney.full_name:
+      attorney.full_name
+    if not firm.address:
+      firm.address
+    if not firm.city:
+      firm.city
+    if not firm.state:
+      firm.state
+    if not firm.zip:
+      firm.zip
+    if not fee.percentage:
+      fee.percentage
+  retainer_pdf
+---
+question: |
+  Client's Full Name
+fields:
+  - no label: client.full_name
+---
+question: |
+  Client's Address
+fields:
+  - Street Address: client.address
+  - City: client.city
+  - State: client.state
+  - ZIP Code: client.zip
+---
+question: |
+  Incident Information
+fields:
+  - Type of Incident: incident.type
+  - Date of Incident: incident.date
+  - Location of Incident: incident.location
+---
+question: |
+  Attorney Information
+fields:
+  - Attorney's Full Name: attorney.full_name
+---
+question: |
+  Law Firm Information
+fields:
+  - Firm Address: firm.address
+  - City: firm.city
+  - State: firm.state
+  - ZIP Code: firm.zip
+---
+question: |
+  Fee Information
+fields:
+  - Contingency Fee Percentage: fee.percentage
+---
+attachment:
+  variable name: retainer_pdf
+  name: Retainer_Agreement_${client.full_name.replace(" ", "_")}.pdf
+  filename: Retainer_Agreement_${client.full_name.replace(" ", "_")}.pdf
+  description: Retainer Agreement
+  pdf template file: data/templates/intake/retainer_agreement.txt
+  fields:
+    client.full_name: ${client.full_name}
+    client.address: ${client.address}
+    client.city: ${client.city}
+    client.state: ${client.state}
+    client.zip: ${client.zip}
+
+    incident.type: ${incident.type}
+    incident.date: ${incident.date}
+    incident.location: ${incident.location}
+
+    attorney.full_name: ${attorney.full_name}
+
+    firm.address: ${firm.address}
+    firm.city: ${firm.city}
+    firm.state: ${firm.state}
+    firm.zip: ${firm.zip}
+
+    fee.percentage: ${fee.percentage}
+    today.date: ${today.date}
+---
+mandatory: True
+question: |
+  Your Retainer Agreement
+subquestion: |
+  Thank you. Your retainer agreement has been generated.
+
+  You can download it using the button below.
+attachment code: retainer_pdf
+buttons:
+  - Exit: exit
+  - Restart: restart
