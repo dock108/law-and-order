@@ -39,4 +39,4 @@ Sincerely,
 
 {{ attorney.full_name }}
 {{ attorney.title }}
-{{ firm.name }} 
+{{ firm.name }}

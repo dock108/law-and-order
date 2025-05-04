@@ -16,7 +16,7 @@ Re: Our Client: {{ client.full_name }}
     Your Insured: {{ insured.full_name }}
     Claim Number: {{ claim.number }}
     Date of Loss: {{ incident.date }}
-    
+
 Dear {{ insurance.adjuster_name }}:
 
 Thank you for your settlement offer of ${{ offer.amount }} dated {{ offer.date }} regarding the above-referenced claim. After careful consideration and discussion with our client, we must respectfully decline this offer.
@@ -41,4 +41,4 @@ Sincerely,
 
 {{ attorney.full_name }}
 {{ attorney.title }}
-{{ firm.name }} 
+{{ firm.name }}

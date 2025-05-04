@@ -81,4 +81,4 @@ Respectfully submitted,
 {{ firm.phone }}
 {{ firm.email }}
 {{ attorney.bar_number }}
-Attorney for Plaintiff 
+Attorney for Plaintiff

@@ -293,4 +293,4 @@ This document provides a reference for all the Jinja template tags used in the p
 | `{{ county_venue.name }}` | County for notarization purposes | NEW YORK |
 | `{{ notary.date }}` | Date of notarization | 5th day of May, 2024 |
 | `{{ notary.id_type }}` | Identification type for notarization | New York Driver's License |
-| `{{ notary.expiration }}` | Notary commission expiration | December 31, 2025 | 
+| `{{ notary.expiration }}` | Notary commission expiration | December 31, 2025 |

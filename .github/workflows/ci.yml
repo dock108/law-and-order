@@ -11,36 +11,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-    
+
     - name: Install Poetry
       uses: snok/install-poetry@v1
       with:
         version: 1.6.1
         virtualenvs-create: true
         virtualenvs-in-project: true
-    
+
     - name: Install dependencies
       run: poetry install --no-interaction
-    
+
     - name: Lint with ruff
       run: poetry run ruff check . --output-format=github
-    
+
     - name: Check formatting with ruff
       run: poetry run ruff format --check .
-    
+
     - name: Check formatting with black
       run: poetry run black --check .
-    
+
     - name: Check imports with isort
       run: poetry run isort --check-only --profile black .
-    
+
     - name: Check templates for PII
       run: python scripts/check_templates.py
-    
+
     - name: Test with pytest
-      run: poetry run pytest 
+      run: poetry run pytest

@@ -40,4 +40,4 @@ select = ["E", "F", "B", "I", "W", "C", "D"]
 ignore = ["D203", "D212"]
 
 [tool.ruff.pydocstyle]
-convention = "google" 
+convention = "google"

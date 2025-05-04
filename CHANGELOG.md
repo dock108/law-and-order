@@ -23,4 +23,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Testing scaffold with pytest
 - CI/CD pipeline with GitHub Actions
 - Code quality tools (ruff, black, isort)
-- Pre-commit hooks configuration 
+- Pre-commit hooks configuration

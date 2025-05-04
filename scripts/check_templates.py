@@ -79,7 +79,7 @@ LEGAL_TERMS = [
     "JURY DEMAND",
     "COMPLAINT",
     "WHEREFORE",
-    "LAWSUITS"
+    "LAWSUITS",
 ]
 
 # Files and directories to exclude (add more as needed)

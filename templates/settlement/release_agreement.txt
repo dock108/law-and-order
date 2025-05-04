@@ -26,4 +26,4 @@ On this {{ notary.date }} before me, the undersigned notary public, personally a
 
 _________________________
 NOTARY PUBLIC
-My Commission Expires: {{ notary.expiration }} 
+My Commission Expires: {{ notary.expiration }}

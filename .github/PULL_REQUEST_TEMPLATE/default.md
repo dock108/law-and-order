@@ -12,4 +12,4 @@
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] I have run `pre-commit run --all-files` locally and all checks passed
 - [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings 
+- [ ] My changes generate no new warnings

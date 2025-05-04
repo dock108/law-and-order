@@ -44,4 +44,4 @@ ACCEPTANCE OF LIEN TERMS:
 I, __________________________, as an authorized representative of {{ provider.name }}, hereby accept the terms of this letter and agree that the total amount of the lien is ${{ medical.balance }}.
 
 ________________________    _______________    _________________
-Signature                    Title              Date 
+Signature                    Title              Date

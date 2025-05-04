@@ -13,6 +13,7 @@ repos:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+        args: ["--check"]
 
   - repo: https://github.com/psf/black
     rev: 24.1.1
@@ -32,18 +33,19 @@ repos:
     hooks:
       - id: pytest
         name: pytest
-        entry: poetry run pytest
-        language: system
+        entry: python -m pytest
+        language: python
         pass_filenames: false
         always_run: true
         stages: [commit]
+        additional_dependencies: [pytest]
 
   - repo: local
     hooks:
       - id: check-templates
         name: check-templates
         entry: python scripts/check_templates.py
-        language: system
+        language: python
         pass_filenames: false
         always_run: true
         stages: [commit]
@@ -52,4 +54,4 @@ repos:
     rev: v3.13.0
     hooks:
       - id: commitizen
-        stages: [commit-msg] 
+        stages: [commit-msg]

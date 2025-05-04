@@ -38,4 +38,4 @@ Sincerely,
 {{ staff.title }}
 {{ firm.name }}
 
-Enclosure: HIPAA Authorization 
+Enclosure: HIPAA Authorization
