@@ -130,3 +130,21 @@ alembic downgrade <revision_id>
 ## License
 
 Proprietary - All Rights Reserved
+
+## Testing
+
+Tests are written using `pytest` and located in the `tests/` directory.
+
+To run tests locally:
+
+1.  Ensure you have a testing database configured (e.g., using Docker or a local PostgreSQL instance). See "RLS Testing" in `docs/SCHEMA.md` for CI setup which can be adapted locally.
+2.  Set the `TEST_DATABASE_URL` environment variable if not using the default expected by `tests/conftest.py` (`postgresql+asyncpg://testuser:testpassword@localhost:5432/testdb`).
+3.  Run migrations: `poetry run alembic upgrade head` (ensure `SUPABASE_URL` is set for Alembic).
+4.  Seed the test database: `psql $TEST_DATABASE_URL -f seed.sql` (adjust command based on your `psql` access).
+5.  Run pytest, including coverage reporting:
+
+```bash
+poetry run pytest --cov=src/pi_auto
+```
+
+Tests are automatically run in CI on every push and pull request to the `main` branch, including coverage checks enforced at >= 80%.

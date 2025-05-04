@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-05-05
+### Added
+- Row-Level Security (RLS) test suite (`tests/test_rls.py`) using `asyncpg`.
+- PostgreSQL service container and seeding to CI workflow for RLS testing.
+- Coverage reporting (`--cov`) added to pytest configuration and CI.
+- `docs/SCHEMA.md` with RLS testing documentation.
+
+### Changed
+- Updated `README.md` testing section.
+- Updated CI workflow for database testing and coverage checks.
+- Alembic `env.py` modified to rely on Alembic's async runner.
+
+## [0.3.0] - 2025-05-05
+### Added
+- Initial database schema migration (`0001_initial_schema.py`) with tables (`client`, `incident`, `insurance`, `provider`, `doc`, `task`) and basic RLS policies.
+- SQLAlchemy ORM models (`src/pi_auto/db/models.py`).
+- Basic CRUD operations module (`src/pi_auto/db/crud.py`).
+- Unit tests for CRUD operations (`tests/test_crud.py`) using SQLite.
+- Unit tests for database engine (`tests/test_db.py`) using mocks.
+- Integration tests for models (`tests/test_models.py`) using SQLite.
+- Documentation for CRUD operations (`docs/CRUD_REFERENCE.md`).
+
+### Changed
+- Updated `README.md` with database setup information.
+- Configured `pytest` and related dependencies (`pytest-asyncio`, `asyncpg`, `greenlet`).
+- Configured pre-commit hooks for linting, formatting, and testing.
+
 ## [0.2.0] - 2025-05-05
 
 ### Added

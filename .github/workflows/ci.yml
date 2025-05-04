@@ -2,45 +2,111 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
+    strategy:
+      matrix:
+        python-version: [ "3.11", "3.12" ]
 
-    - name: Set up Python
+    # Service containers to run with `test`
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432 # Map port for potential local connection if needed, primarily for service access
+        # Needed to connect health checks to database
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: ${{ matrix.python-version }}
 
     - name: Install Poetry
       uses: snok/install-poetry@v1
       with:
-        version: 1.6.1
         virtualenvs-create: true
         virtualenvs-in-project: true
+        installer-parallel: true
+
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
     - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --no-root
+
+    - name: Install project
       run: poetry install --no-interaction
 
-    - name: Lint with ruff
-      run: poetry run ruff check . --output-format=github
+    - name: Wait for PostgreSQL to be ready
+      run: |
+        echo "Waiting for PostgreSQL..."
+        until pg_isready -h localhost -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB; do
+          sleep 1
+        done
+        echo "PostgreSQL is ready!"
+      env:
+        POSTGRES_USER: testuser
+        POSTGRES_PASSWORD: testpassword
+        POSTGRES_DB: testdb
+        PGPASSWORD: testpassword # psql command needs this env var
 
-    - name: Check formatting with ruff
-      run: poetry run ruff format --check .
+    - name: Run Alembic migrations
+      run: |
+        # Source the venv - adjust path if needed based on poetry config
+        source .venv/bin/activate
+        alembic upgrade head
+      env:
+        # Use the service container for migrations
+        SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+        # SUPABASE_KEY is not strictly needed for direct DB connection but good practice
+        SUPABASE_KEY: dummy-key
 
-    - name: Check formatting with black
-      run: poetry run black --check .
+    - name: Seed database
+      run: |
+        psql -h localhost -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB -a -f seed.sql
+      env:
+        POSTGRES_USER: testuser
+        POSTGRES_PASSWORD: testpassword
+        POSTGRES_DB: testdb
+        PGPASSWORD: testpassword # psql command needs this env var
 
-    - name: Check imports with isort
-      run: poetry run isort --check-only --profile black .
+    - name: Run tests with coverage
+      run: |
+        # Source the venv
+        source .venv/bin/activate
+        # Run pytest with coverage and fail if below 80%
+        pytest --cov=src/pi_auto --cov-report=term-missing --cov-fail-under=80
+      env:
+        # Use the service container for tests
+        TEST_DATABASE_URL: postgresql+asyncpg://testuser:testpassword@localhost:5432/testdb
+        # Environment variables needed by the application/tests if they read .env
+        SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+        SUPABASE_KEY: dummy-key
 
-    - name: Check templates for PII
-      run: python scripts/check_templates.py
-
-    - name: Test with pytest
-      run: poetry run pytest
+    - name: Run pre-commit hooks
+      run: |
+        # Source the venv
+        source .venv/bin/activate
+        pre-commit run --all-files

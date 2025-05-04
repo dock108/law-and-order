@@ -35,7 +35,14 @@ target_metadata = pi_auto.db.models.Base.metadata
 
 # Get database connection URL from environment variable
 supabase_url = os.getenv("SUPABASE_URL")
-db_url = supabase_url.replace("supabase", "postgresql") if supabase_url else None
+# Ensure the URL starts with postgresql+asyncpg:// for async engine
+if supabase_url and "postgresql" in supabase_url:
+    if "+asyncpg" not in supabase_url:
+        db_url = supabase_url.replace("postgresql://", "postgresql+asyncpg://")
+    else:
+        db_url = supabase_url
+else:
+    db_url = None  # Or a default like "postgresql+asyncpg://user:pass@host/db"
 
 # Replace the sqlalchemy.url in the config with the environment variable
 if db_url:
@@ -79,10 +86,14 @@ async def run_migrations_online() -> None:
     In this scenario we need to create an Engine
     and associate a connection with the context.
     """
+    # Ensure the config section uses the potentially modified db_url
+    engine_config = config.get_section(config.config_ini_section)
+
     connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section),
+        engine_config,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        # Driver is inferred from the URL prefix
     )
 
     async with connectable.connect() as connection:
@@ -94,9 +105,7 @@ async def run_migrations_online() -> None:
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    # Use await directly as Alembic handles the event loop when run with --asyncio
-    # Assuming Alembic CLI is invoked correctly to handle async
-    # No explicit asyncio.run() needed here if run via Alembic's async runner
-    # The actual await might happen within Alembic's own execution flow
-    # This placeholder indicates the intention for async execution:
-    run_migrations_online()  # This will be awaited by Alembic's runner
+    import asyncio
+
+    # Use asyncio.run() for direct script execution compatibility
+    asyncio.run(run_migrations_online())

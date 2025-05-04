@@ -128,6 +128,70 @@ def upgrade() -> None:
         ),
     )
 
+    # --- RLS Setup ---
+    # Create the 'auth' schema if it doesn't exist (needed for policies)
+    op.execute("CREATE SCHEMA IF NOT EXISTS auth;")
+
+    # Create a minimal auth.users table if it doesn't exist
+    # This is just to satisfy the foreign key references in the policy
+    # and the create_test_users function. It does NOT replicate Supabase Auth.
+    op.execute(
+        """
+    CREATE TABLE IF NOT EXISTS auth.users (
+        id uuid PRIMARY KEY,
+        email text UNIQUE,
+        role text
+        -- Add other columns if needed by policies, e.g., created_at
+        , created_at timestamptz DEFAULT now()
+    );
+    """
+    )
+
+    # Create a placeholder auth.jwt() function to mimic Supabase behaviour for testing
+    # It reads from session variables set by the test fixture
+    op.execute(
+        """
+    CREATE OR REPLACE FUNCTION auth.jwt()
+    RETURNS jsonb
+    LANGUAGE plpgsql
+    AS $$
+    BEGIN
+        -- Attempt to get the claims, handle potential null/missing variable
+        RETURN current_setting('request.jwt.claims', true)::jsonb;
+    EXCEPTION
+        WHEN UNDEFINED_OBJECT THEN
+            -- Return a default "anon" JWT if the setting is not defined
+            RETURN '{
+                "role": "anon",
+                "sub": "00000000-0000-0000-0000-000000000000",
+                "email": "anon@example.com"
+            }'::jsonb;
+    END;
+    $$;
+    """
+    )
+
+    # Create database roles WITH LOGIN and password
+    # Simpler creation, rely on DB reset to avoid conflicts
+    op.execute("CREATE ROLE lawyer WITH LOGIN PASSWORD 'testpassword';")
+    op.execute("CREATE ROLE paralegal WITH LOGIN PASSWORD 'testpassword';")
+    op.execute("CREATE ROLE client WITH LOGIN PASSWORD 'testpassword';")
+    op.execute("CREATE ROLE anon WITH LOGIN PASSWORD 'testpassword';")
+
+    # Explicitly grant privileges to these roles on the database and schemas
+    op.execute("GRANT CONNECT ON DATABASE testdb TO lawyer, paralegal, client, anon;")
+    op.execute(
+        "GRANT CREATE, USAGE ON SCHEMA public TO lawyer, paralegal, client, anon;"
+    )
+    op.execute("GRANT USAGE ON SCHEMA auth TO lawyer, paralegal, client, anon;")
+    # Grant SELECT on auth.users table for all roles
+    op.execute("GRANT SELECT ON TABLE auth.users TO lawyer, paralegal, client, anon;")
+    # Grant permissions needed by the placeholder function
+    # Might not be needed if function is SECURITY DEFINER or default public grant works
+    # op.execute(
+    #     "GRANT EXECUTE ON FUNCTION auth.jwt() TO lawyer, paralegal, client, anon;"
+    # )
+
     # Enable Row-Level Security (RLS) on all tables
     # Enable RLS on client table
     op.execute("ALTER TABLE client ENABLE ROW LEVEL SECURITY;")
@@ -242,6 +306,7 @@ def upgrade() -> None:
     )
 
     # Create helper function to create test users
+    # Ensure this runs *after* auth.users table exists
     op.execute(
         """
     CREATE OR REPLACE FUNCTION create_test_users()
@@ -249,6 +314,7 @@ def upgrade() -> None:
     BEGIN
         -- Create lawyer role user
         INSERT INTO auth.users (id, email, role)
+        -- Removed created_at column as it has a default value
         VALUES (
             '00000000-0000-0000-0000-000000000001',
             'lawyer@example.com',
@@ -256,20 +322,29 @@ def upgrade() -> None:
         )
         ON CONFLICT (id) DO NOTHING;
 
-        -- Create paralegal role user
+        -- Create paralegal role user (paralegal_a)
         INSERT INTO auth.users (id, email, role)
         VALUES (
             '00000000-0000-0000-0000-000000000002',
-            'paralegal@example.com',
+            'paralegal_a@example.com',
             'paralegal'
         )
         ON CONFLICT (id) DO NOTHING;
 
-        -- Create client role user
+        -- Create paralegal role user (paralegal_b)
         INSERT INTO auth.users (id, email, role)
         VALUES (
             '00000000-0000-0000-0000-000000000003',
-            'client@example.com',
+            'paralegal_b@example.com',
+            'paralegal'
+        )
+        ON CONFLICT (id) DO NOTHING;
+
+        -- Create client role user (client_a)
+        INSERT INTO auth.users (id, email, role)
+        VALUES (
+            '00000000-0000-0000-0000-000000000004',
+            'client_a@example.com',
             'client'
         )
         ON CONFLICT (id) DO NOTHING;
@@ -278,11 +353,18 @@ def upgrade() -> None:
     """
     )
 
+    # Optionally call the function immediately after creation
+    # if needed for subsequent steps
+    # op.execute("SELECT create_test_users();")
+
 
 def downgrade() -> None:
     """Revert the database schema changes made by this migration."""
     # Drop the helper function
     op.execute("DROP FUNCTION IF EXISTS create_test_users();")
+
+    # Drop the placeholder jwt function
+    op.execute("DROP FUNCTION IF EXISTS auth.jwt();")
 
     # Drop tables in reverse order of creation (to handle foreign key constraints)
     op.drop_table("task")
@@ -291,3 +373,13 @@ def downgrade() -> None:
     op.drop_table("insurance")
     op.drop_table("incident")
     op.drop_table("client")
+
+    # Drop the auth.users table and auth schema
+    op.execute("DROP TABLE IF EXISTS auth.users;")
+    op.execute("DROP SCHEMA IF EXISTS auth;")
+
+    # Drop database roles
+    op.execute("DROP ROLE IF EXISTS lawyer;")
+    op.execute("DROP ROLE IF EXISTS paralegal;")
+    op.execute("DROP ROLE IF EXISTS client;")
+    op.execute("DROP ROLE IF EXISTS anon;")
