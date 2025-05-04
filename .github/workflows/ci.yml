@@ -110,3 +110,52 @@ jobs:
         # Source the venv
         source .venv/bin/activate
         pre-commit run --all-files
+
+  docassemble:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+        installer-parallel: true
+
+    - name: Install dependencies
+      run: poetry install --no-interaction
+
+    - name: Start Docassemble
+      run: |
+        cd docker/docassemble
+        docker compose up -d
+        echo "Waiting for Docassemble to start..."
+        sleep 30  # Give some initial time for containers to start
+
+    - name: Check Docassemble health
+      run: |
+        source .venv/bin/activate
+        python scripts/health_docassemble.py --retries 15 --delay 10
+
+    - name: Check template volume mounting
+      run: |
+        mkdir -p templates
+        echo "Test template file" > templates/test.yml
+        docker exec docassemble ls -la /usr/share/docassemble/files/templates/
+        docker exec docassemble cat /usr/share/docassemble/files/templates/test.yml
+        if [ $? -ne 0 ]; then
+          echo "Template volume mounting failed"
+          exit 1
+        fi
+
+    - name: Stop Docassemble
+      if: always()
+      run: |
+        cd docker/docassemble
+        docker compose down

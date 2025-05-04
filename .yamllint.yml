@@ -1,0 +1,9 @@
+extends: default
+
+rules:
+  document-start: disable  # Don't require --- at start of documents
+  document-end: disable    # Don't require ... at end of documents
+
+ignore: |
+  templates/*.yml
+  # Add other paths if needed

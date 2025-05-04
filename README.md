@@ -148,3 +148,35 @@ poetry run pytest --cov=src/pi_auto
 ```
 
 Tests are automatically run in CI on every push and pull request to the `main` branch, including coverage checks enforced at >= 80%.
+
+## Docassemble Integration
+
+### Run Docassemble locally
+
+To set up and run the Docassemble document automation server locally:
+
+1. Make sure Docker and Docker Compose are installed on your system.
+
+2. Start the Docassemble containers:
+
+```bash
+cd docker/docassemble
+docker compose up -d
+```
+
+3. Check if Docassemble is running properly:
+
+```bash
+poetry run python scripts/health_docassemble.py
+```
+
+4. Once running, you can access the Docassemble web interface at http://localhost:8100.
+
+5. To stop the containers:
+
+```bash
+cd docker/docassemble
+docker compose down
+```
+
+The `templates/` directory is mounted inside the Docassemble container at `/usr/share/docassemble/files/templates`, making all your templates available for use in interviews and document generation.

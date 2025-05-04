@@ -1,0 +1,30 @@
+---
+question: |
+  Personal Injury Case Information
+fields:
+  - Client's Name: client.full_name
+  - Date of Incident: incident.date
+  - Type of Incident: incident.type
+  - Description: incident.description
+  - Client's Phone: client.phone
+  - Client's Email: client.email
+---
+mandatory: True
+question: Summary of Case Information
+subquestion: |
+  Thank you for providing the following information:
+
+  **Client Name**: ${ client.full_name }
+
+  **Incident Date**: ${ incident.date }
+
+  **Incident Type**: ${ incident.type }
+
+  **Description**: ${ incident.description }
+
+  **Contact Information**:
+  - Phone: ${ client.phone }
+  - Email: ${ client.email }
+buttons:
+  - Exit: exit
+  - Restart: restart

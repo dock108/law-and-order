@@ -2,6 +2,20 @@
 
 This document provides a reference for all the Jinja template tags used in the personal injury document templates.
 
+## Docassemble Integration
+
+Templates in the `templates/` directory are bind-mounted to the Docassemble container at `/usr/share/docassemble/files/templates`. This allows you to directly use these templates in your Docassemble interviews for document automation.
+
+To use a template in a Docassemble interview:
+
+```yaml
+---
+template: your_template.yml
+path: /usr/share/docassemble/files/templates
+```
+
+Run the Docassemble container locally with the instructions in the [README.md](../README.md) to test your templates.
+
 ## Common Tags
 
 ### Client Information

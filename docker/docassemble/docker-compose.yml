@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  docassemble:
+    image: jhpyle/docassemble:latest
+    container_name: docassemble
+    restart: unless-stopped
+    environment:
+      - TIMEZONE=${TIMEZONE:-America/New_York}
+      - POSTGRES=true
+      - POSTGRES_SERVER=da_postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=docassemble
+      - POSTGRES_USER=docassemble
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-docassemble}
+      - SMTP_SERVER=${SMTP_SERVER:-localhost}
+      - SMTP_PORT=${SMTP_PORT:-25}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER:-no-reply@example.com}
+    ports:
+      - "8100:8080"
+    volumes:
+      - ./../../templates:/usr/share/docassemble/files/templates
+    depends_on:
+      - da_postgres
+    networks:
+      - docassemble-network
+
+  da_postgres:
+    image: postgres:13-alpine
+    container_name: da_postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=docassemble
+      - POSTGRES_USER=docassemble
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-docassemble}
+    volumes:
+      - docassemble-postgres-data:/var/lib/postgresql/data
+    networks:
+      - docassemble-network
+
+volumes:
+  docassemble-postgres-data:
+
+networks:
+  docassemble-network:
+    driver: bridge
