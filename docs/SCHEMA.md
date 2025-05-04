@@ -15,6 +15,16 @@ The database is managed using PostgreSQL and utilizes SQLAlchemy for ORM interac
 
 (Refer to `src/pi_auto/db/models.py` for detailed column definitions and relationships.)
 
+## Table Usage by Endpoints
+
+### `/intake` Endpoint
+
+The `/intake` endpoint creates records in the following tables:
+- `client`: Stores basic client information provided during intake.
+- `incident`: Stores details about the incident associated with the client.
+
+After successful creation, the endpoint enqueues a task to generate retainer documents, which will later create records in the `doc` table.
+
 ## Row-Level Security (RLS)
 
 The database employs Row-Level Security (RLS) policies to ensure data privacy and restrict access based on user roles (`lawyer`, `paralegal`, `client`) and associations (e.g., task assignee, client owner).

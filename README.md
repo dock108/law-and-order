@@ -1,7 +1,10 @@
 # Personal Injury Automation
 
 [![CI](https://github.com/law-and-order/pi-auto/actions/workflows/ci.yml/badge.svg)](https://github.com/law-and-order/pi-auto/actions/workflows/ci.yml)
+<!--
+API docs badge only displays in production environments to avoid 404 errors in preview environments
 [![API Docs](https://img.shields.io/badge/API-Docs-blue)](https://github.com/law-and-order/pi-auto/actions)
+-->
 
 A comprehensive set of tools for automating personal injury case management and workflows.
 
@@ -63,6 +66,28 @@ poetry run uvicorn pi_auto_api.main:app --reload
 4. Health endpoints:
    - `/healthz` - Simple health check
    - `/readyz` - Deep health check (database and Docassemble connectivity)
+
+5. Client Intake endpoint:
+   ```bash
+   curl -X POST http://localhost:8000/intake \
+     -H "Content-Type: application/json" \
+     -d '{
+       "client": {
+         "full_name": "John Doe",
+         "dob": "1980-01-01",
+         "phone": "555-123-4567",
+         "email": "john.doe@example.com",
+         "address": "123 Main St, Anytown, USA 12345"
+       },
+       "incident": {
+         "date": "2023-05-15",
+         "location": "Intersection of 1st Ave and Main St",
+         "police_report_url": "https://example.com/police-report-123",
+         "injuries": ["Whiplash", "Back pain"],
+         "vehicle_damage_text": "Front bumper damage and broken headlight"
+       }
+     }'
+   ```
 
 ## Development
 

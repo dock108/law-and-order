@@ -6,7 +6,7 @@ This module contains the FastAPI application instance and route definitions.
 import logging
 import uuid
 from contextlib import asynccontextmanager
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 import asyncpg
 import httpx
@@ -15,6 +15,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from pi_auto_api.config import settings
+from pi_auto_api.db import create_intake
+from pi_auto_api.schemas import IntakePayload, IntakeResponse
+from pi_auto_api.tasks import generate_retainer
 
 # Configure logging
 logging.basicConfig(
@@ -22,6 +25,9 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# Global database connection pool
+db_pool: Optional[asyncpg.Pool] = None
 
 
 @asynccontextmanager
@@ -51,8 +57,28 @@ async def lifespan(app: FastAPI):
         )
 
     logger.info("Starting up PI Auto API")
+
+    # Initialize the database connection pool if URL is configured
+    global db_pool
+    if settings.SUPABASE_URL:
+        try:
+            db_pool = await asyncpg.create_pool(
+                settings.SUPABASE_URL,
+                min_size=2,
+                max_size=10,
+            )
+            logger.info("Database connection pool initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize database connection pool: {str(e)}")
+            db_pool = None
+
     yield
-    # Shutdown
+
+    # Shutdown: Close the connection pool
+    if db_pool:
+        await db_pool.close()
+        logger.info("Database connection pool closed")
+
     logger.info("Shutting down PI Auto API")
 
 
@@ -116,13 +142,34 @@ async def check_database() -> None:
     Raises:
         HTTPException: If the database is not available.
     """
-    try:
-        conn = await asyncpg.connect(settings.SUPABASE_URL)
+    global db_pool
+
+    # Create the pool if it doesn't exist yet
+    if not db_pool and settings.SUPABASE_URL:
         try:
+            db_pool = await asyncpg.create_pool(
+                settings.SUPABASE_URL,
+                min_size=2,
+                max_size=10,
+            )
+            logger.info("Database connection pool initialized during health check")
+        except Exception as e:
+            logger.error(f"Failed to initialize database connection pool: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Database connection failed: {str(e)}",
+            ) from e
+
+    if not db_pool:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database connection pool not available",
+        )
+
+    try:
+        async with db_pool.acquire() as conn:
             await conn.execute("SELECT 1")
             logger.info("Database check successful")
-        finally:
-            await conn.close()
     except Exception as e:
         logger.error(f"Database check failed: {str(e)}")
         raise HTTPException(
@@ -190,5 +237,55 @@ async def root() -> JSONResponse:
             "documentation": "/docs",
             "health": "/healthz",
             "readiness": "/readyz",
+            "intake": "/intake",
         }
     )
+
+
+# Client intake endpoint
+@app.post(
+    "/intake",
+    response_model=IntakeResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Create new client intake",
+)
+async def intake(payload: IntakePayload) -> IntakeResponse:
+    """Create a new client intake record.
+
+    This endpoint creates a new client and incident record in the database,
+    and queues a task to generate a retainer agreement.
+
+    Args:
+        payload: The intake payload containing client and incident data
+
+    Returns:
+        A response containing the created client_id and incident_id
+
+    Raises:
+        HTTPException: If there's an error creating the records
+    """
+    try:
+        # Create the intake records
+        result = await create_intake(payload)
+
+        # Queue the retainer generation task
+        generate_retainer.delay(result["client_id"])
+
+        return IntakeResponse(
+            client_id=result["client_id"],
+            incident_id=result["incident_id"],
+        )
+    except ValueError as e:
+        # Handle validation errors
+        logger.error(f"Validation error in intake: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        ) from e
+    except Exception as e:
+        # Handle database errors
+        logger.error(f"Error creating intake: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create intake. Please try again later.",
+        ) from e

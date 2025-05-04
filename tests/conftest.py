@@ -8,11 +8,14 @@ from typing import AsyncGenerator
 import asyncpg
 import pytest
 import pytest_asyncio
+from httpx import AsyncClient
 
 # Add the src directory to the Python path
 src_path = str(Path(__file__).parent.parent / "src")
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
+
+from pi_auto_api.main import app  # noqa: E402
 
 
 @pytest.fixture(scope="session")
@@ -121,3 +124,16 @@ async def db_conn(db_url: str, request) -> AsyncGenerator[asyncpg.Connection, No
     finally:
         if conn:
             await conn.close()
+
+
+@pytest_asyncio.fixture
+async def async_client() -> AsyncGenerator[AsyncClient, None]:
+    """Create an async client for testing API endpoints."""
+    # Set necessary env vars for testing
+    os.environ.setdefault(
+        "SUPABASE_URL", "postgresql://testuser:testpassword@localhost:5432/testdb"
+    )
+    os.environ.setdefault("SUPABASE_KEY", "test-key")
+
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        yield client
