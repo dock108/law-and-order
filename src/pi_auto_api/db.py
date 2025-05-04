@@ -87,3 +87,65 @@ async def create_intake(payload: IntakePayload) -> Dict[str, int]:
         # Ensure connection is closed even if an exception occurs
         if conn:
             await conn.close()
+
+
+async def get_client_payload(client_id: int) -> dict:
+    """Fetch client and incident data shaped for Docassemble retainer interview.
+
+    Args:
+        client_id: The ID of the client.
+
+    Returns:
+        A dictionary containing client and incident data.
+
+    Raises:
+        ValueError: If the client or incident is not found.
+        Exception: If there is a database error.
+    """
+    if not settings.SUPABASE_URL:
+        raise ValueError("SUPABASE_URL is not set")
+
+    conn = None
+    try:
+        conn = await asyncpg.connect(settings.SUPABASE_URL)
+        query = """
+        SELECT
+            c.full_name, c.dob, c.phone, c.email, c.address,
+            i.date AS incident_date, i.location AS incident_location,
+            i.injuries AS incident_injuries,
+            i.vehicle_damage_text AS incident_vehicle_damage_text
+        FROM client c
+        JOIN incident i ON c.id = i.client_id
+        WHERE c.id = $1;
+        """
+        record = await conn.fetchrow(query, client_id)
+
+        if not record:
+            raise ValueError(f"Client with ID {client_id} not found.")
+
+        # Shape the data for Docassemble
+        payload = {
+            "client": {
+                "full_name": record["full_name"],
+                "dob": str(record["dob"]),  # Convert date to string
+                "phone": record["phone"],
+                "email": record["email"],
+                "address": record["address"],
+            },
+            "incident": {
+                "date": str(record["incident_date"]),  # Convert date to string
+                "location": record["incident_location"],
+                # Injuries are stored as JSON string, need to load them
+                "injuries": json.loads(record["incident_injuries"]),
+                "vehicle_damage_text": record["incident_vehicle_damage_text"],
+            },
+        }
+        return payload
+    except Exception as e:
+        logger.error(
+            f"Error fetching client payload for ID {client_id}: {str(e)}", exc_info=True
+        )
+        raise
+    finally:
+        if conn:
+            await conn.close()

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2025-05-10
+### Added
+- Fully implemented `generate_retainer` Celery task.
+- Fetches client/incident data from the database.
+- Generates retainer PDF via Docassemble API integration.
+- Sends retainer for e-signature via DocuSign API integration (JWT auth).
+- Added `get_client_payload` DB helper.
+- Created `externals` module for Docassemble and DocuSign clients.
+- Added `docusign-esign` dependency.
+- Included DocuSign configuration settings and `.env.sample` placeholders.
+- Added unit tests for the `generate_retainer` task with mocked external services.
+- Updated README and FLOWS.md with detailed retainer generation flow.
+
 ## [0.8.0] - 2025-05-10
 ### Added
 - Celery + Redis background queue for asynchronous tasks

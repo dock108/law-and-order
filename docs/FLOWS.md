@@ -5,7 +5,8 @@ This document outlines the key process flows in the PI Automation system.
 ## Client Intake and Retainer Generation
 
 The following sequence diagram shows the flow of data from the client intake API
-through Celery for asynchronous processing to Docassemble for document generation.
+through Celery for asynchronous processing, Docassemble for document generation,
+and DocuSign for e-signature.
 
 ```mermaid
 sequenceDiagram
@@ -24,8 +25,9 @@ sequenceDiagram
 
     Note over Worker: Asynchronous processing
     Queue->>Worker: Process generate_retainer task
-    Worker->>DB: Fetch client & incident data
-    Worker->>DA: Call /api/v1/generate/retainer
-    DA-->>Worker: Return PDF document
-    Worker->>DS: Send for e-signature
-    Worker->>DB: Update task status
+    Worker->>DB: Fetch client & incident data (get_client_payload)
+    Worker->>DA: Call /api/v1/generate/retainer (generate_retainer_pdf)
+    DA-->>Worker: Return PDF document bytes
+    Worker->>DS: Send envelope for e-signature (send_envelope)
+    DS-->>Client: Email with signing link
+    Worker->>DB: Update task status (TODO)

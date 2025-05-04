@@ -257,3 +257,20 @@ Background tasks like generating retainer agreements and sending them for e-sign
 ### Task Types
 
 - `generate_retainer`: Generates a retainer agreement for a client and submits it for e-signature
+
+### Automated Retainer Flow
+
+The primary background task is generating and sending the retainer agreement after client intake.
+
+```mermaid
+graph LR
+    A[Client Submits Intake via API] --> B(API Creates DB Records);
+    B --> C{Enqueue generate_retainer Task};
+    C --> D[Celery Worker Picks Up Task];
+    D --> E(Worker Fetches Client/Incident Data from DB);
+    E --> F(Worker Calls Docassemble API);
+    F --> G{Docassemble Generates PDF};
+    G --> H(Worker Calls DocuSign API);
+    H --> I{DocuSign Sends Email for Signature};
+    I --> J(Worker Updates Task Status);
+```

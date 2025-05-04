@@ -1,24 +1,54 @@
-"""Tests for the task functions."""
+"""Tests for the task helper functions."""
 
-from pi_auto_api.tasks.retainer import generate_retainer
+from unittest.mock import AsyncMock, patch
 
-
-def test_generate_retainer():
-    """Test the generate_retainer task."""
-    # Call the task
-    result = generate_retainer(123)
-
-    # Verify the result
-    assert result == {"client_id": 123, "status": "queued"}
+import pytest
+from pi_auto_api.tasks.retainer import _run_retainer_flow
 
 
-def test_generate_retainer_with_mock_logger():
-    """Test the generate_retainer task with mocked logger."""
-    # Call the task with a different ID to test consistency
-    result = generate_retainer(456)
+@pytest.mark.asyncio
+async def test_run_retainer_flow_success():
+    """Test the _run_retainer_flow helper directly with mocks."""
+    client_id = 123
+    expected_payload = {
+        "client": {"email": "test@example.com", "full_name": "Test Client"}
+    }
+    expected_pdf = b"pdf-content"
+    expected_envelope = "env-12345"
 
-    # Verify the result
-    assert result == {"client_id": 456, "status": "queued"}
+    # Patch dependencies within the test scope
+    with (
+        patch(
+            "pi_auto_api.tasks.retainer.get_client_payload", new_callable=AsyncMock
+        ) as mock_payload,
+        patch(
+            "pi_auto_api.tasks.retainer.generate_retainer_pdf", new_callable=AsyncMock
+        ) as mock_pdf,
+        patch(
+            "pi_auto_api.tasks.retainer.send_envelope", new_callable=AsyncMock
+        ) as mock_envelope,
+    ):
+        # Set mock return values
+        mock_payload.return_value = expected_payload
+        mock_pdf.return_value = expected_pdf
+        mock_envelope.return_value = expected_envelope
+
+        # Call the async helper directly
+        result = await _run_retainer_flow(client_id)
+
+        # Verify calls and result
+        mock_payload.assert_awaited_once_with(client_id)
+        mock_pdf.assert_awaited_once_with(expected_payload)
+        mock_envelope.assert_awaited_once_with(
+            expected_pdf,
+            expected_payload["client"]["email"],
+            expected_payload["client"]["full_name"],
+        )
+        assert result == {
+            "client_id": client_id,
+            "envelope_id": expected_envelope,
+            "status": "completed",
+        }
 
 
 # Add your tests here
