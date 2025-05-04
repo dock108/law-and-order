@@ -1,0 +1,44 @@
+{{ firm.name }}
+{{ firm.address }}
+{{ firm.city }}, {{ firm.state }} {{ firm.zip }}
+Phone: {{ firm.phone }}
+Fax: {{ firm.fax }}
+Email: {{ firm.email }}
+
+{{ today.date }}
+
+{{ insurance.adjuster_name }}
+{{ insurance.company_name }}
+{{ insurance.company_address }}
+{{ insurance.company_city }}, {{ insurance.company_state }} {{ insurance.company_zip }}
+
+Re: Our Client: {{ client.full_name }}
+    Your Insured: {{ insured.full_name }}
+    Claim Number: {{ claim.number }}
+    Date of Loss: {{ incident.date }}
+    
+Dear {{ insurance.adjuster_name }}:
+
+Thank you for your settlement offer of ${{ offer.amount }} dated {{ offer.date }} regarding the above-referenced claim. After careful consideration and discussion with our client, we must respectfully decline this offer.
+
+Your offer fails to adequately compensate our client for the following reasons:
+
+1. The offer does not fully account for our client's medical expenses, which currently total ${{ medical_expenses.total }}.
+
+2. The offer makes no provision for our client's ongoing pain and suffering, which continues to significantly impact daily activities.
+
+3. The offer does not appropriately compensate for lost wages and diminished earning capacity, documented at ${{ lost_wages.amount }}.
+
+4. The offer fails to consider the long-term implications of our client's injuries, which may require future medical treatment estimated at ${{ future_medical.estimated_cost }}.
+
+Our client has authorized us to reduce our settlement demand from ${{ demand.original_amount }} to ${{ demand.revised_amount }}. This represents a good faith effort to resolve this matter without the need for litigation.
+
+Please advise within {{ response.timeframe }} days whether your company is willing to increase its offer to an amount that fairly compensates our client for the injuries sustained in this incident.
+
+If we cannot reach an agreement that properly values our client's claim, we are prepared to file suit to protect our client's interests.
+
+Sincerely,
+
+{{ attorney.full_name }}
+{{ attorney.title }}
+{{ firm.name }} 

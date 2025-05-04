@@ -1,0 +1,55 @@
+AUTHORIZATION FOR RELEASE OF HEALTH INFORMATION PURSUANT TO HIPAA
+
+Patient Name: {{ client.full_name }}
+Date of Birth: {{ client.dob }}
+SSN: {{ client.ssn }}
+Patient Address: {{ client.address }}, {{ client.city }}, {{ client.state }} {{ client.zip }}
+
+I, or my authorized representative, request that health information regarding my care and treatment be released as set forth on this form. I understand that:
+
+1. This authorization may include disclosure of information relating to ALCOHOL and DRUG TREATMENT, MENTAL HEALTH TREATMENT, and CONFIDENTIAL HIV/AIDS RELATED INFORMATION only if I place my initials on the appropriate line in Item 7. In the event the health information described below includes any of these types of information, and I initial the line on the box in Item 7, I specifically authorize release of such information to the person(s) indicated in Item 6.
+
+2. With some exceptions, health information once disclosed may be redisclosed by the recipient. If I am authorizing the release of HIV/AIDS-related, alcohol or drug treatment, or mental health treatment information, the recipient is prohibited from redisclosing such information or using the disclosed information for any other purpose without my authorization unless permitted to do so under federal or state law.
+
+3. I have the right to revoke this authorization at any time by writing to the provider listed below in Item 5. I understand that I may revoke this authorization except to the extent that action has already been taken based on this authorization.
+
+4. Signing this authorization is voluntary. My treatment, payment, enrollment in a health plan, or eligibility for benefits will not be conditioned upon my authorization of this disclosure.
+
+5. Name and Address of Provider or Entity to Release this Information:
+   {{ provider.name }}
+   {{ provider.address }}
+   {{ provider.city }}, {{ provider.state }} {{ provider.zip }}
+
+6. Name and Address of Person(s) to Whom this Information Will Be Disclosed:
+   {{ firm.name }}
+   {{ firm.address }}
+   {{ firm.city }}, {{ firm.state }} {{ firm.zip }}
+
+7. Specific Information to be Disclosed:
+   □ Medical Records from (date) {{ medical.start_date }} to (date) {{ medical.end_date }}
+   □ Entire Medical Record, including patient histories, office notes, test results, radiology studies, films, referrals, consults, billing records, insurance records, and records sent to you by other health care providers
+   □ Other: {{ medical.specific_records }}
+
+Include: (Indicate by Initialing)
+____ Alcohol/Drug Treatment Information
+____ Mental Health Information
+____ HIV/AIDS-Related Information
+
+8. Reason for Release of Information:
+   □ At request of individual
+   □ Legal Investigation
+   □ Other: {{ request.reason }}
+
+9. Date or Event on Which this Authorization Will Expire: {{ authorization.expiration }}
+
+10. If not the patient, name of person signing form: {{ representative.name }}
+
+11. Authority to sign on behalf of patient: {{ representative.authority }}
+
+All items on this form have been completed, my questions about this form have been answered, and I have been provided a copy of the form.
+
+____________________________________    ______________
+Signature of patient or representative     Date
+
+____________________________________
+Print name of representative (if applicable) 

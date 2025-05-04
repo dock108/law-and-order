@@ -1,0 +1,47 @@
+{{ firm.name }}
+{{ firm.address }}
+{{ firm.city }}, {{ firm.state }} {{ firm.zip }}
+Phone: {{ firm.phone }}
+Fax: {{ firm.fax }}
+Email: {{ firm.email }}
+
+{{ today.date }}
+
+{{ provider.name }}
+{{ provider.address }}
+{{ provider.city }}, {{ provider.state }} {{ provider.zip }}
+
+Re: Patient: {{ client.full_name }}
+    Date of Birth: {{ client.dob }}
+    Date of Incident: {{ incident.date }}
+    Outstanding Balance: ${{ medical.balance }}
+
+To Whom It May Concern:
+
+This law firm represents {{ client.full_name }} with respect to personal injuries sustained in a {{ incident.type }} on {{ incident.date }}. Our client was treated at your facility from {{ medical.start_date }} to {{ medical.end_date }}.
+
+We understand that there is an outstanding balance of ${{ medical.balance }} for medical services rendered to our client. This letter serves as formal notice that we acknowledge this outstanding balance and agree to protect your interests by placing your name on any settlement drafts or proceeds arising from the above-referenced incident, up to the amount of the unpaid balance.
+
+This letter should not be construed as a personal guarantee of payment by this law firm. Rather, it is our agreement to withhold funds from any settlement or judgment in this matter to satisfy the outstanding balance, subject to the following conditions:
+
+1. This lien is only applicable if our client obtains a recovery in this matter;
+2. Any reduction in the bill must be negotiated prior to the disbursement of funds;
+3. Our client's release of the claim would terminate this agreement;
+4. This agreement applies only to the balance related to treatment for injuries from the incident date listed above.
+
+Please confirm your agreement to these terms by signing below and returning a copy to our office. Upon receipt, we will add your facility to our list of lienholders in this matter.
+
+Should you have any questions or wish to discuss this further, please contact our office.
+
+Sincerely,
+
+{{ attorney.full_name }}
+{{ attorney.title }}
+{{ firm.name }}
+
+ACCEPTANCE OF LIEN TERMS:
+
+I, __________________________, as an authorized representative of {{ provider.name }}, hereby accept the terms of this letter and agree that the total amount of the lien is ${{ medical.balance }}.
+
+________________________    _______________    _________________
+Signature                    Title              Date 

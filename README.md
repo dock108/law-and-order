@@ -1,6 +1,6 @@
 # Personal Injury Automation
 
-[![CI](https://github.com/your-org/pi-auto/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/pi-auto/actions/workflows/ci.yml)
+[![CI](https://github.com/law-and-order/pi-auto/actions/workflows/ci.yml/badge.svg)](https://github.com/law-and-order/pi-auto/actions/workflows/ci.yml)
 
 A comprehensive set of tools for automating personal injury case management and workflows.
 
@@ -72,6 +72,26 @@ The project follows [Conventional Commits](https://www.conventionalcommits.org/)
 ```
 
 Types include: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
+
+## Templates
+
+Legal document templates are stored in the `templates/` directory, organized by purpose:
+
+- `templates/intake/` - Client intake forms and agreements
+- `templates/correspondence/` - Letters and communications
+- `templates/medical/` - Medical record requests and authorizations
+- `templates/settlement/` - Demand letters and settlement documents
+- `templates/workflow/` - Task lists and internal workflow documents
+
+All templates use Jinja-style tags (e.g., `{{ client.full_name }}`) for dynamic content. See `docs/TEMPLATE_REFERENCE.md` for a complete list of available tags.
+
+### Checking Templates for PII
+
+To verify that templates do not contain any personally identifiable information (PII):
+
+```bash
+python scripts/check_templates.py
+```
 
 ## License
 

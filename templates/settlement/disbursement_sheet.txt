@@ -1,0 +1,53 @@
+SETTLEMENT DISBURSEMENT SHEET
+
+Client: {{ client.full_name }}
+Matter: {{ matter.description }}
+Date of Settlement: {{ settlement.date }}
+Claim/Case Number: {{ claim.number }}
+
+SETTLEMENT PROCEEDS
+
+Gross Settlement Amount: ${{ settlement.gross_amount }}
+
+DISBURSEMENTS
+
+Attorney's Fees ({{ fee.percentage }}%): ${{ fee.amount }}
+
+EXPENSES
+{% for expense in case_expenses %}
+- {{ expense.description }}: ${{ expense.amount }}
+{% endfor %}
+Total Expenses: ${{ case_expenses.total }}
+
+MEDICAL LIENS AND BILLS
+{% for lien in medical_liens %}
+- {{ lien.provider }}: ${{ lien.amount }}
+{% endfor %}
+Total Medical Liens: ${{ medical_liens.total }}
+
+OTHER LIENS
+{% for lien in other_liens %}
+- {{ lien.description }}: ${{ lien.amount }}
+{% endfor %}
+Total Other Liens: ${{ other_liens.total }}
+
+SUMMARY
+
+Gross Settlement: ${{ settlement.gross_amount }}
+Less Attorney's Fees: ${{ fee.amount }}
+Less Case Expenses: ${{ case_expenses.total }}
+Less Medical Liens/Bills: ${{ medical_liens.total }}
+Less Other Liens: ${{ other_liens.total }}
+NET TO CLIENT: ${{ settlement.net_client }}
+
+ACKNOWLEDGMENT
+
+I, {{ client.full_name }}, acknowledge that I have reviewed this Settlement Disbursement Sheet and approve the distribution of funds as detailed above. I understand that my net recovery is ${{ settlement.net_client }}.
+
+_________________________    ______________
+{{ client.full_name }}        Date
+CLIENT
+
+_________________________    ______________
+{{ attorney.full_name }}      Date
+ATTORNEY 

@@ -1,0 +1,41 @@
+{{ firm.name }}
+{{ firm.address }}
+{{ firm.city }}, {{ firm.state }} {{ firm.zip }}
+Phone: {{ firm.phone }}
+Fax: {{ firm.fax }}
+Email: {{ firm.email }}
+
+{{ today.date }}
+
+{{ provider.name }}
+{{ provider.address }}
+{{ provider.city }}, {{ provider.state }} {{ provider.zip }}
+
+Re: Medical Records Request
+    Patient: {{ client.full_name }}
+    Date of Birth: {{ client.dob }}
+    Date(s) of Service: {{ medical.start_date }} to {{ medical.end_date }}
+
+To Whom It May Concern:
+
+This letter serves as a formal request for copies of the complete medical records for the above-referenced patient, {{ client.full_name }}, for the date(s) of service specified above. The patient has authorized this request and a signed HIPAA Authorization is enclosed.
+
+Please include the following in your response:
+1. Complete medical records, including but not limited to office notes, consultation reports, diagnostic test results, and radiology reports
+2. Billing records and itemized statements
+3. Radiology films and images (please provide on CD/DVD if available)
+4. Any other documentation related to the patient's treatment
+
+The records are needed for legal representation purposes. Please forward the records to our office at the address listed above, or via secure electronic transmission to {{ firm.records_email }}.
+
+If there are any fees associated with the production of these records, please contact our office at {{ firm.phone }} prior to processing this request. If the fees are reasonable and within statutory limitations, our office will promptly remit payment.
+
+Thank you for your prompt attention to this matter. If you have any questions or need additional information, please do not hesitate to contact our office.
+
+Sincerely,
+
+{{ staff.name }}
+{{ staff.title }}
+{{ firm.name }}
+
+Enclosure: HIPAA Authorization 

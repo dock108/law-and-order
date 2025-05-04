@@ -3,4 +3,4 @@
 
 def test_sanity():
     """Verify that tests are working."""
-    assert True 
+    assert True

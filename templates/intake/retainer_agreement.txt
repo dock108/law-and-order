@@ -1,0 +1,36 @@
+RETAINER AGREEMENT
+
+Date: {{ today.date }}
+
+THIS AGREEMENT, made on the date above, between {{ client.full_name }}, residing at {{ client.address }}, {{ client.city }}, {{ client.state }} {{ client.zip }} (hereinafter referred to as "Client") and THE LAW FIRM LLC, with offices at {{ firm.address }}, {{ firm.city }}, {{ firm.state }} {{ firm.zip }} (hereinafter referred to as "Attorney").
+
+WHEREAS, Client desires to retain the services of Attorney to represent Client in connection with a claim for damages sustained as a result of {{ incident.type }} which occurred on {{ incident.date }} at {{ incident.location }} (hereinafter referred to as "Claim"); and
+
+WHEREAS, Attorney desires to represent Client in connection with the Claim.
+
+NOW, THEREFORE, in consideration of the mutual promises herein contained, the parties hereto agree as follows:
+
+1. SCOPE OF REPRESENTATION
+   Attorney agrees to represent Client in connection with the Claim and to take such steps as Attorney deems advisable to pursue Client's claims.
+
+2. LEGAL FEES
+   Client agrees to pay Attorney a contingent fee of {{ fee.percentage }}% of any recovery obtained on behalf of Client, whether by settlement, judgment, or otherwise. If no recovery is obtained, Client shall not be responsible for payment of legal fees.
+
+3. EXPENSES
+   Client authorizes Attorney to incur reasonable expenses in connection with the prosecution of the Claim. Such expenses may include, but are not limited to, costs of: medical records, police reports, filing fees, deposition costs, expert witness fees, investigator fees, and other case-related expenses. Client agrees to reimburse Attorney for such expenses, regardless of the outcome of the Claim. Attorney may advance such expenses on Client's behalf but shall be reimbursed from any recovery before the contingent fee is calculated.
+
+4. TERMINATION
+   Either party may terminate this Agreement upon written notice to the other party. In the event of termination, Client shall be responsible for expenses incurred by Attorney up to the date of termination, and Attorney shall be entitled to collect a fee based on quantum meruit if Client ultimately obtains a recovery.
+
+5. NO GUARANTEE
+   Client acknowledges that Attorney has made no promise or guarantee regarding the outcome of the Claim, and any expressions about the outcome are only opinions.
+
+IN WITNESS WHEREOF, the parties hereto have executed this Agreement on the date first above written.
+
+_________________________
+{{ client.full_name }}
+CLIENT
+
+_________________________
+{{ attorney.full_name }}
+ATTORNEY 

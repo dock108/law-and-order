@@ -1,0 +1,29 @@
+MEMORANDUM
+
+TO:	{{ client.last_name }} File; {{ staff.support }}
+
+FROM:	{{ attorney.name }}
+
+DATE:	{{ today.date }} 
+
+RE:	{{ client.last_name }} Post Arbitration Task List
+
+Please do the following on the file:
+
+- Scan both arbitration packets to Dropbox
+- Scan the arbitration award to Dropbox
+- Arbitration Award - EITHER:
+  - File a trial de novo, rejecting the arbitration award
+  - We are not going to file a trial de novo
+- Contact our experts and begin to get dates/prices for video depositions:
+{% for expert in experts %}
+  - {{ expert.name }}
+{% endfor %}
+- Confirm that we have the MRI films, with the DICOM folders saved to Dropbox
+- Begin contacting the providers listed in the interrogatories for outstanding balances and get updated bills
+- Confirm the amounts of any liens and request updated lien ledgers
+{% if client.surgery %}
+- Confirm that we have received the Anatomical Justice diagrams
+{% endif %}
+
+Dictated electronically, but not read. 

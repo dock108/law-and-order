@@ -1,0 +1,29 @@
+RELEASE OF ALL CLAIMS
+
+KNOW ALL MEN BY THESE PRESENTS:
+
+That the Undersigned, {{ client.full_name }}, (hereinafter "Releasor"), for and in consideration of the sum of {{ settlement.gross_amount }} Dollars (${{ settlement.gross_amount_numeric }}), receipt of which is hereby acknowledged, does hereby for himself/herself, his/her heirs, executors, administrators, successors and assigns, release, acquit and forever discharge {{ defendant.name }} and {{ insurance.company_name }} (hereinafter "Releasees"), and all other persons, firms, and corporations, from any and all claims, actions, causes of action, demands, rights, damages, costs, loss of services, expenses, and compensation whatsoever which the Releasor now has or which may hereafter accrue on account of or in any way arising out of any and all known and unknown, foreseen and unforeseen, bodily and personal injuries and property damage, and the consequences thereof, resulting or to result from the accident, casualty, or event which occurred on or about {{ incident.date }} at or near {{ incident.location }}.
+
+It is understood and agreed that this settlement is a compromise of a doubtful and disputed claim, and that the payment made is not to be construed as an admission of liability on the part of the Releasees, and that said Releasees deny liability therefor and intend merely to avoid litigation and buy their peace.
+
+The Releasor hereby declares and represents that the injuries sustained are or may be permanent and progressive and that recovery therefrom is uncertain and indefinite, and in making this Release it is understood and agreed that the Releasor relies wholly upon the Releasor's judgment, belief, and knowledge of the nature, extent, effect, and duration of said injuries and liability therefor and is made without reliance upon any statement or representation of the Releasees or their representatives.
+
+The Releasor further agrees to indemnify and hold harmless the Releasees from any and all liens, claims, demands, or actions for reimbursement from any healthcare provider, insurer, governmental entity, or other third party who has provided, or may in the future provide, medical care, services, or benefits to the Releasor in connection with the incident described herein.
+
+This Release expressly covers and includes all claims for medical expenses, hospital expenses, lost earnings, loss of earning capacity, pain and suffering, permanent disability or disfigurement, emotional distress, loss of consortium, and all other damages of any kind whatsoever, whether known or unknown, suspected or unsuspected, claimed or unclaimed, and whether based upon negligence, gross negligence, strict liability, or any other legal theory.
+
+THE UNDERSIGNED HAS READ THE FOREGOING RELEASE AND FULLY UNDERSTANDS IT.
+
+Signed, sealed, and delivered this {{ settlement.date }}.
+
+_________________________
+{{ client.full_name }}, RELEASOR
+
+STATE OF {{ state_venue.name }}
+COUNTY OF {{ county_venue.name }}
+
+On this {{ notary.date }} before me, the undersigned notary public, personally appeared {{ client.full_name }}, proved to me through satisfactory evidence of identification, which was {{ notary.id_type }}, to be the person whose name is signed on the preceding document, and acknowledged to me that he/she signed it voluntarily for its stated purpose.
+
+_________________________
+NOTARY PUBLIC
+My Commission Expires: {{ notary.expiration }} 

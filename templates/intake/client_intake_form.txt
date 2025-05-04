@@ -1,0 +1,88 @@
+PERSONAL INJURY CLIENT INTAKE FORM
+
+Date: {{ today.date }}
+
+PERSONAL INFORMATION:
+Full Name: {{ client.full_name }}
+Date of Birth: {{ client.dob }}
+SSN: {{ client.ssn }}
+Address: {{ client.address }}
+City: {{ client.city }}        State: {{ client.state }}        Zip: {{ client.zip }}
+Home Phone: {{ client.home_phone }}
+Cell Phone: {{ client.cell_phone }}
+Email: {{ client.email }}
+Preferred Contact Method: {{ client.contact_preference }}
+Marital Status: {{ client.marital_status }}
+Spouse's Name (if applicable): {{ client.spouse_name }}
+
+EMPLOYMENT INFORMATION:
+Employer: {{ client.employer }}
+Occupation: {{ client.occupation }}
+Work Address: {{ client.work_address }}
+Work Phone: {{ client.work_phone }}
+Monthly Income: ${{ client.monthly_income }}
+Lost Wages to Date: ${{ client.lost_wages }}
+
+INCIDENT INFORMATION:
+Date of Incident: {{ incident.date }}
+Time of Incident: {{ incident.time }}
+Location of Incident: {{ incident.location }}
+Description of Incident:
+{{ incident.description }}
+
+Police Report Filed? {{ incident.police_report_filed }}
+Police Report Number: {{ incident.police_report_number }}
+Police Department: {{ incident.police_department }}
+
+INJURIES:
+{% for injury in injuries %}
+{{ injury.description }}
+{% endfor %}
+
+MEDICAL TREATMENT:
+Have you been treated by a physician? {{ medical.physician_treated }}
+Hospital/Emergency Room: {{ medical.hospital }}
+Primary Care Physician: {{ medical.primary_doctor }}
+Specialists seen:
+{% for doctor in medical.specialists %}
+{{ doctor.name }} - {{ doctor.specialty }}
+{% endfor %}
+
+INSURANCE INFORMATION:
+Your Insurance Company: {{ client_insurance.company }}
+Policy Number: {{ client_insurance.policy_number }}
+Agent's Name: {{ client_insurance.agent }}
+Phone: {{ client_insurance.phone }}
+
+Other Party's Insurance (if applicable):
+Insurance Company: {{ other_insurance.company }}
+Policy Number: {{ other_insurance.policy_number }}
+Claim Number: {{ other_insurance.claim_number }}
+Adjuster's Name: {{ other_insurance.adjuster }}
+Phone: {{ other_insurance.phone }}
+
+WITNESSES:
+{% for witness in witnesses %}
+Name: {{ witness.name }}
+Phone: {{ witness.phone }}
+Relationship to you: {{ witness.relationship }}
+{% endfor %}
+
+PREVIOUS CLAIMS/LAWSUITS:
+Have you ever filed a personal injury claim before? {{ prior_claims.has_prior }}
+{% if prior_claims.has_prior == "Yes" %}
+Details:
+{% for claim in prior_claims.details %}
+Date: {{ claim.date }} - Type: {{ claim.type }} - Outcome: {{ claim.outcome }}
+{% endfor %}
+{% endif %}
+
+REFERRAL INFORMATION:
+How did you hear about our firm? {{ referral.source }}
+If referred, by whom? {{ referral.person }}
+
+I certify that the information provided above is true and correct to the best of my knowledge.
+
+_________________________    ______________
+{{ client.full_name }}        Date
+CLIENT 

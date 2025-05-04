@@ -1,0 +1,39 @@
+{{ firm.name }}
+{{ firm.address }}
+{{ firm.city }}, {{ firm.state }} {{ firm.zip }}
+Phone: {{ firm.phone }}
+Fax: {{ firm.fax }}
+Email: {{ firm.email }}
+
+{{ today.date }}
+
+{{ insurance.adjuster_name }}
+{{ insurance.company_name }}
+{{ insurance.company_address }}
+{{ insurance.company_city }}, {{ insurance.company_state }} {{ insurance.company_zip }}
+
+Re: Our Client: {{ client.full_name }}
+    Your Insured: {{ insured.full_name }}
+    Claim Number: {{ claim.number }}
+    Date of Loss: {{ incident.date }}
+    Policy Number: {{ policy.number }}
+
+Dear {{ insurance.adjuster_name }}:
+
+Please be advised that this office represents {{ client.full_name }} with respect to injuries sustained in the above-referenced incident involving your insured, {{ insured.full_name }}.
+
+You are hereby directed to forward all future communications regarding this claim directly to our office. Please do not contact our client directly.
+
+We request that you forward a copy of your insured's policy declaration page, indicating all coverage available, including liability, medical payments, and any umbrella or excess coverage that may apply.
+
+Additionally, we request that you preserve any and all evidence related to this claim, including but not limited to photographs, video recordings, witness statements, and accident reports.
+
+Please acknowledge receipt of this letter by providing the name, direct telephone number, and email address of the claims representative who will be handling this matter.
+
+Thank you for your prompt attention to this matter.
+
+Sincerely,
+
+{{ attorney.full_name }}
+{{ attorney.title }}
+{{ firm.name }} 

@@ -1,0 +1,75 @@
+{{ firm.name }}
+{{ firm.address }}
+{{ firm.city }}, {{ firm.state }} {{ firm.zip }}
+Phone: {{ firm.phone }}
+Fax: {{ firm.fax }}
+Email: {{ firm.email }}
+
+{{ today.date }}
+
+{{ insurance.adjuster_name }}
+{{ insurance.company_name }}
+{{ insurance.company_address }}
+{{ insurance.company_city }}, {{ insurance.company_state }} {{ insurance.company_zip }}
+
+Re: Our Client: {{ client.full_name }}
+    Your Insured: {{ insured.full_name }}
+    Claim Number: {{ claim.number }}
+    Date of Loss: {{ incident.date }}
+    Policy Number: {{ policy.number }}
+
+Dear {{ insurance.adjuster_name }}:
+
+This letter constitutes a formal demand for settlement of the personal injury claim of our client, {{ client.full_name }}, arising from the {{ incident.type }} that occurred on {{ incident.date }} at {{ incident.location }}.
+
+FACTS OF THE INCIDENT
+
+{{ incident.description }}
+
+LIABILITY
+
+{{ liability.description }}
+
+INJURIES AND TREATMENT
+
+{{ client.full_name }} sustained the following injuries in this incident:
+
+{% for injury in injuries %}
+- {{ injury.description }}
+{% endfor %}
+
+As a result of these injuries, our client underwent the following medical treatment:
+
+{% for treatment in treatments %}
+- {{ treatment.provider }}: {{ treatment.dates }} - {{ treatment.description }}
+{% endfor %}
+
+MEDICAL EXPENSES
+
+Our client has incurred the following medical expenses to date:
+
+{% for expense in medical_expenses %}
+- {{ expense.provider }}: ${{ expense.amount }}
+{% endfor %}
+
+Total Medical Expenses: ${{ medical_expenses.total }}
+
+LOST WAGES
+
+As a result of the injuries sustained, our client was unable to work from {{ lost_wages.start_date }} to {{ lost_wages.end_date }}, resulting in lost wages of ${{ lost_wages.amount }}.
+
+PAIN AND SUFFERING
+
+{{ pain_suffering.description }}
+
+SETTLEMENT DEMAND
+
+Based on the above, we hereby demand the sum of ${{ demand.amount }} to settle this claim. This demand will remain open for {{ demand.expiration_days }} days from the date of this letter, after which it will be withdrawn.
+
+Please contact our office at your earliest convenience to discuss this matter.
+
+Sincerely,
+
+{{ attorney.full_name }}
+{{ attorney.title }}
+{{ firm.name }} 

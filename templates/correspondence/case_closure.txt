@@ -1,0 +1,42 @@
+{{ firm.name }}
+{{ firm.address }}
+{{ firm.city }}, {{ firm.state }} {{ firm.zip }}
+Phone: {{ firm.phone }}
+Fax: {{ firm.fax }}
+Email: {{ firm.email }}
+
+{{ today.date }}
+
+{{ client.full_name }}
+{{ client.address }}
+{{ client.city }}, {{ client.state }} {{ client.zip }}
+
+Re: Conclusion of Representation
+    Case Reference: {{ case.reference }}
+    Date of Incident: {{ incident.date }}
+
+Dear {{ client.first_name }}:
+
+This letter confirms that our representation of you in connection with your personal injury claim arising from the incident on {{ incident.date }} has now concluded. We are pleased to have assisted you in obtaining a favorable resolution of this matter.
+
+As you know, we have finalized the settlement of your case for ${{ settlement.gross_amount }}. After deduction of the agreed-upon attorney's fees of ${{ fee.amount }} ({{ fee.percentage }}%), case expenses of ${{ case_expenses.total }}, and payment of medical liens and bills totaling ${{ medical_liens.total }}, the net amount of ${{ settlement.net_client }} has been disbursed to you.
+
+All final paperwork has been completed and filed, and all claim releases have been executed. Our legal representation in this matter is now formally concluded. Please be aware of the following important matters:
+
+1. Statute of Limitations: Now that your case is closed, we will not be monitoring any potential deadlines that may apply to other claims you might have arising from this incident. If you believe you have other claims related to this incident that have not been addressed, please consult with another attorney promptly.
+
+2. Record Retention: We will maintain your file in accordance with our file retention policy, which calls for storage of closed files for {{ firm.retention_years }} years from the date of closing. After that time, your file may be destroyed without further notice. If you would like a copy of any documents from your file for your records, please let us know within the next 30 days.
+
+3. Medical Treatment: If you are still receiving medical treatment, please continue to follow your doctor's advice. Any medical expenses incurred after the settlement are your responsibility.
+
+4. Tax Considerations: Please remember that while settlements for physical injuries are generally not taxable, portions of your settlement related to lost wages, interest, or punitive damages may have tax implications. We recommend consulting with a tax professional regarding any potential tax obligations.
+
+It has been our pleasure to represent you in this matter. We hope that you have been satisfied with our services. Should you have any questions regarding the conclusion of your case, or if you need legal assistance in the future, please do not hesitate to contact our office.
+
+Thank you for allowing us to serve you.
+
+Sincerely,
+
+{{ attorney.full_name }}
+{{ attorney.title }}
+{{ firm.name }} 

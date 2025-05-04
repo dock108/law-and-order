@@ -1,0 +1,17 @@
+MEMORANDUM
+
+TO:	{{ client.last_name }} File; {{ staff.support }}
+
+FROM:	{{ attorney.name }}
+
+DATE:	{{ today.date }} 
+
+RE:	{{ client.last_name }} Task List
+
+Please do the following on the file:
+
+{% for task in tasks %}
+- {{ task.description }}
+{% endfor %}
+
+Dictated electronically, but not read. 
