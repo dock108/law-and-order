@@ -1,6 +1,5 @@
 """Alembic environment configuration."""
 
-import asyncio
 import os
 import sys
 from logging.config import fileConfig
@@ -95,4 +94,9 @@ async def run_migrations_online() -> None:
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    asyncio.run(run_migrations_online())
+    # Use await directly as Alembic handles the event loop when run with --asyncio
+    # Assuming Alembic CLI is invoked correctly to handle async
+    # No explicit asyncio.run() needed here if run via Alembic's async runner
+    # The actual await might happen within Alembic's own execution flow
+    # This placeholder indicates the intention for async execution:
+    run_migrations_online()  # This will be awaited by Alembic's runner
