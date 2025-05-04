@@ -308,3 +308,96 @@ Run the Docassemble container locally with the instructions in the [README.md](.
 | `{{ notary.date }}` | Date of notarization | 5th day of May, 2024 |
 | `{{ notary.id_type }}` | Identification type for notarization | New York Driver's License |
 | `{{ notary.expiration }}` | Notary commission expiration | December 31, 2025 |
+
+# Email Template Reference
+
+This document describes the available email templates in the PI Auto system and the context variables that can be used with each template.
+
+## Common Context Variables
+
+These variables are available in all email templates:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `current_year` | Current year (automatically added) | `2023` |
+| `support_email` | Support email address | `support@example.com` |
+| `support_phone` | Support phone number | `555-123-4567` |
+
+## Templates
+
+### `welcome.html`
+
+Sent to new clients after they've completed the intake process.
+
+**Additional Context Variables:**
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `client.full_name` | Client's full name | `John Doe` |
+| `client.email` | Client's email address | `john.doe@example.com` |
+
+**Example Usage:**
+
+```python
+from pi_auto_api.externals.sendgrid_client import send_mail
+
+await send_mail(
+    template_name="welcome.html",
+    to_email="john.doe@example.com",
+    template_ctx={
+        "client": {
+            "full_name": "John Doe",
+            "email": "john.doe@example.com"
+        },
+        "support_email": "support@example.com",
+        "support_phone": "555-123-4567"
+    }
+)
+```
+
+### `retainer_sent.html`
+
+Sent to clients after a retainer agreement has been sent via DocuSign.
+
+**Additional Context Variables:**
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `client.full_name` | Client's full name | `John Doe` |
+| `client.email` | Client's email address | `john.doe@example.com` |
+
+**Example Usage:**
+
+```python
+from pi_auto_api.externals.sendgrid_client import send_mail
+
+await send_mail(
+    template_name="retainer_sent.html",
+    to_email="john.doe@example.com",
+    template_ctx={
+        "client": {
+            "full_name": "John Doe",
+            "email": "john.doe@example.com"
+        },
+        "support_email": "support@example.com",
+        "support_phone": "555-123-4567"
+    }
+)
+```
+
+## Adding New Templates
+
+To add a new email template:
+
+1. Create a new HTML file in the `email_templates` directory.
+2. Use Jinja2 syntax for template variables (e.g. `{{ client.full_name }}`).
+3. Update this document with the new template and its context variables.
+4. Use the `send_mail` function to send emails with the new template.
+
+## Best Practices
+
+1. Always include responsive design for mobile devices.
+2. Keep emails simple and focused.
+3. Include clear call-to-action when needed.
+4. Test new templates with multiple email clients.
+5. Include both HTML and plain text versions when possible.

@@ -274,3 +274,46 @@ graph LR
     H --> I{DocuSign Sends Email for Signature};
     I --> J(Worker Updates Task Status);
 ```
+
+## Email Adapter
+
+The application includes an email adapter for sending templated emails via SendGrid.
+
+### Configuration
+
+1. Set up your SendGrid API key in the `.env` file:
+
+```bash
+SENDGRID_API_KEY=your_sendgrid_api_key
+```
+
+### Email Templates
+
+Email templates are located in the `src/pi_auto_api/email_templates/` directory and use Jinja2 syntax for dynamic content:
+
+- `welcome.html` - Welcome email for new clients
+- `retainer_sent.html` - Notification that a retainer has been sent for signature
+
+### Sending Emails
+
+To send an email from your code:
+
+```python
+from pi_auto_api.externals.sendgrid_client import send_mail
+
+# Example: Send welcome email
+await send_mail(
+    template_name="welcome.html",
+    to_email="client@example.com",
+    template_ctx={
+        "client": {
+            "full_name": "John Doe",
+            "email": "client@example.com"
+        },
+        "support_email": "support@example.com",
+        "support_phone": "555-123-4567"
+    }
+)
+```
+
+For a complete list of available email templates and context variables, see the [Template Reference](docs/TEMPLATE_REFERENCE.md).

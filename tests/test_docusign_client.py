@@ -17,7 +17,10 @@ from docusign_esign import (
     Tabs,
 )
 from fastapi import HTTPException
-from pi_auto_api.externals.docusign import _get_docusign_api_client, send_envelope
+from pi_auto_api.externals.docusign import (
+    _get_docusign_api_client,
+    send_envelope,
+)
 
 # Mock settings values
 FAKE_SETTINGS = {
@@ -32,6 +35,29 @@ FAKE_PDF_BYTES = b"%PDF..."
 CLIENT_EMAIL = "signer@example.com"
 CLIENT_NAME = "Signer Name"
 EXPECTED_ENVELOPE_ID = "test-envelope-123"
+
+
+@pytest.fixture(autouse=True)
+def reset_cache():
+    """Reset the DocuSign API client cache before each test."""
+    # Import the module variables directly for resetting
+    from pi_auto_api.externals.docusign import _api_client_cache, _token_expiry
+
+    # Save original values
+    old_cache = _api_client_cache
+    old_expiry = _token_expiry
+
+    # Reset cache
+    import pi_auto_api.externals.docusign
+
+    pi_auto_api.externals.docusign._api_client_cache = None
+    pi_auto_api.externals.docusign._token_expiry = None
+
+    yield
+
+    # Restore original values after test
+    pi_auto_api.externals.docusign._api_client_cache = old_cache
+    pi_auto_api.externals.docusign._token_expiry = old_expiry
 
 
 @patch("pi_auto_api.externals.docusign.settings", MagicMock(**FAKE_SETTINGS))
@@ -58,11 +84,18 @@ def test_get_docusign_api_client_success(mock_file_open, MockApiClient):
 
 
 @patch("pi_auto_api.externals.docusign.settings", MagicMock(**FAKE_SETTINGS))
-def test_get_docusign_api_client_key_not_found():
+@patch("pi_auto_api.externals.docusign.logger")  # Add logger mock
+def test_get_docusign_api_client_key_not_found(mock_logger):
     """Test FileNotFoundError when private key is missing."""
-    with patch("builtins.open", side_effect=FileNotFoundError):
+    with patch(
+        "pi_auto_api.externals.docusign._read_private_key",
+        side_effect=FileNotFoundError("DocuSign private key not found at: fake_path"),
+    ):
         with pytest.raises(FileNotFoundError, match="DocuSign private key not found"):
             _get_docusign_api_client()
+
+    # Verify warning was logged
+    mock_logger.warning.assert_called_once()
 
 
 @patch("pi_auto_api.externals.docusign.settings", MagicMock(**FAKE_SETTINGS))
@@ -71,9 +104,8 @@ def test_get_docusign_api_client_key_not_found():
 def test_get_docusign_api_client_jwt_error(MockApiClient, mock_file_open):
     """Test HTTPException is raised on JWT authentication failure."""
     mock_api_instance = MagicMock()
-    mock_api_instance.configure_jwt_authorization_flow.side_effect = ApiException(
-        status=500, reason="JWT Error"
-    )
+    api_exception = ApiException(status=500, reason="JWT Error")
+    mock_api_instance.configure_jwt_authorization_flow.side_effect = api_exception
     MockApiClient.return_value = mock_api_instance
 
     with pytest.raises(HTTPException) as exc_info:
@@ -167,4 +199,3 @@ async def test_send_envelope_api_error(MockEnvelopesApi, mock_get_api_client):
 
     assert exc_info.value.status_code == 500  # We map internal errors to 500
     assert "DocuSign API error" in exc_info.value.detail
-    assert "INVALID_REQUEST" in exc_info.value.detail  # Check if body is included

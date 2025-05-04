@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retainer Agreement Sent</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .content {
+            padding: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            font-size: 0.8em;
+            color: #777;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .alert {
+            background-color: #e8f4fd;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Your Retainer Agreement</h1>
+    </div>
+
+    <div class="content">
+        <p>Dear {{ client.full_name }},</p>
+
+        <p>We're pleased to inform you that your retainer agreement has been sent to you via DocuSign. You should receive an email from DocuSign shortly with instructions to sign the document.</p>
+
+        <div class="alert">
+            <h3>Action Required</h3>
+            <p>Please check your email inbox (including spam folders) for a message from DocuSign regarding your retainer agreement.</p>
+            <p>The email should be sent to: <strong>{{ client.email }}</strong></p>
+        </div>
+
+        <p>If you don't receive the DocuSign email within the next hour, please contact our support team at {{ support_email }} or call {{ support_phone }}.</p>
+
+        <p>Once you've signed the retainer agreement, our legal team will begin work on your case immediately.</p>
+
+        <p>Thank you for your trust in our services.</p>
+
+        <p>Sincerely,<br>
+        The PI Auto Team</p>
+    </div>
+
+    <div class="footer">
+        <p>© {{ current_year }} PI Auto. All rights reserved.</p>
+        <p>This email was sent to {{ client.email }}</p>
+    </div>
+</body>
+</html>

@@ -2,8 +2,8 @@
 
 import base64
 import logging
+from datetime import datetime, timedelta
 
-# from datetime import datetime, timedelta # Not currently used
 from docusign_esign import (
     ApiClient,
     ApiException,
@@ -20,6 +20,10 @@ from fastapi import HTTPException, status
 from pi_auto_api.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Cache for DocuSign API client with JWT auth
+_api_client_cache = None
+_token_expiry = None
 
 
 def _read_private_key(path: str) -> str:
@@ -46,7 +50,22 @@ def _read_private_key(path: str) -> str:
 
 
 def _get_docusign_api_client() -> ApiClient:
-    """Configure and return a DocuSign API client with JWT authentication."""
+    """Configure and return a DocuSign API client with JWT authentication.
+
+    Returns a cached client if one exists and the token is not expired.
+    Otherwise, creates a new client with a fresh JWT token.
+    """
+    global _api_client_cache, _token_expiry
+
+    # Check if we have a cached client with a valid token
+    current_time = datetime.now()
+    if _api_client_cache and _token_expiry and current_time < _token_expiry:
+        logger.debug("Using cached DocuSign JWT token")
+        return _api_client_cache
+
+    logger.debug("Generating new DocuSign JWT token")
+
+    # Create new API client
     api_client = ApiClient()
     api_client.host = settings.DOCUSIGN_BASE_URL
 
@@ -60,8 +79,25 @@ def _get_docusign_api_client() -> ApiClient:
     ):
         raise ValueError("Missing required DocuSign configuration settings.")
 
-    # The _read_private_key function already handles its own exceptions
-    private_key = _read_private_key(settings.DOCUSIGN_PRIVATE_KEY)
+    # First check if the private key file exists before attempting JWT auth
+    if not settings.DOCUSIGN_PRIVATE_KEY:
+        logger.warning("DOCUSIGN_PRIVATE_KEY setting is empty")
+        raise ValueError("DocuSign private key path is not configured")
+
+    try:
+        # The _read_private_key function already handles its own exceptions
+        private_key = _read_private_key(settings.DOCUSIGN_PRIVATE_KEY)
+    except FileNotFoundError:
+        # Log a warning but re-raise the exception
+        logger.warning(
+            f"DocuSign private key not found at configured path: "
+            f"{settings.DOCUSIGN_PRIVATE_KEY}"
+        )
+        raise
+
+    # Set token expiry to slightly less than the actual expiry time (3600 seconds)
+    token_lifetime = 3600  # seconds
+    buffer = 300  # 5 minutes buffer to avoid edge cases
 
     # Request JWT token
     try:
@@ -70,20 +106,27 @@ def _get_docusign_api_client() -> ApiClient:
             client_id=settings.DOCUSIGN_INTEGRATOR_KEY,
             user_id=settings.DOCUSIGN_USER_ID,
             scopes=["signature", "impersonation"],
-            expires_in=3600,  # Token validity in seconds
+            expires_in=token_lifetime,
         )
+
+        # Update the cache and expiry time
+        _api_client_cache = api_client
+        _token_expiry = current_time + timedelta(seconds=token_lifetime - buffer)
+
         return api_client
     except ApiException as e:
         # Safely log the exception details
         error_details = f"status={e.status}, reason={e.reason}"
         if hasattr(e, "body") and e.body:
-            error_details += f", body={e.body[:100]}..."  # Log truncated body
+            # Log truncated body
+            error_details += f", body={e.body[:100]}..."
         logger.error(
             f"DocuSign JWT authentication failed: {error_details}", exc_info=False
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"DocuSign authentication error: {e.reason}",  # Use reason in detail
+            # Use reason in detail
+            detail=f"DocuSign authentication error: {e.reason}",
         ) from e
 
 

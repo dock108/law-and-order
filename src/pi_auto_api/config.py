@@ -4,10 +4,14 @@ This module uses pydantic-settings to manage environment variables and
 configuration settings for the API.
 """
 
+import logging
+import os
 from typing import List, Optional
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -24,6 +28,7 @@ class Settings(BaseSettings):
         DOCUSIGN_INTEGRATOR_KEY: DocuSign Integrator Key (Client ID)
         DOCUSIGN_USER_ID: DocuSign User ID (GUID)
         DOCUSIGN_PRIVATE_KEY: Path to the DocuSign private key file
+        SENDGRID_API_KEY: API key for SendGrid
     """
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
@@ -46,7 +51,25 @@ class Settings(BaseSettings):
     DOCUSIGN_ACCOUNT_ID: Optional[str] = None
     DOCUSIGN_INTEGRATOR_KEY: Optional[str] = None
     DOCUSIGN_USER_ID: Optional[str] = None
-    DOCUSIGN_PRIVATE_KEY: str = "docusign_private.key"  # Default path
+    DOCUSIGN_PRIVATE_KEY: str = "./docusign_private.key"  # Default to local file
+
+    # SendGrid settings
+    SENDGRID_API_KEY: Optional[str] = None
+
+    @field_validator("DOCUSIGN_PRIVATE_KEY")
+    @classmethod
+    def validate_docusign_key_path(cls, v: str) -> str:
+        """Verify that the private key path is valid.
+
+        This validator logs a warning if the file doesn't exist but doesn't
+        raise an error since the app might need to start without DocuSign.
+        """
+        if v and not os.path.isfile(v):
+            logger.warning(
+                f"DocuSign private key file not found at '{v}'. "
+                "DocuSign functionality will be unavailable."
+            )
+        return v
 
     @field_validator("ALLOWED_ORIGINS")
     def assemble_cors_origins(cls, v: str) -> List[str]:

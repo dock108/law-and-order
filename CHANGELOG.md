@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2025-05-11
+### Added
+- SendGrid email adapter for sending transactional emails
+- Jinja2 templating engine for rendering email templates
+- Email templates: welcome.html and retainer_sent.html
+- SendGrid configuration in settings (SENDGRID_API_KEY)
+- Comprehensive email rendering utilities
+- Unit tests with mocked SendGrid API client
+- Documentation for email templates and merge fields
+- Updated README with Email Adapter usage section
+
 ## [0.9.0] - 2025-05-10
 ### Added
 - Fully implemented `generate_retainer` Celery task.
