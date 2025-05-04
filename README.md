@@ -93,6 +93,40 @@ To verify that templates do not contain any personally identifiable information 
 python scripts/check_templates.py
 ```
 
+## Database
+
+This project uses PostgreSQL with Supabase for data storage. The database schema includes the following tables:
+
+- `client` - Client personal information
+- `incident` - Accident/incident details
+- `insurance` - Insurance policy information
+- `provider` - Medical provider information
+- `doc` - Document storage and tracking
+- `task` - Case workflow and task management
+
+### Row-Level Security
+
+Row-Level Security policies are implemented for all tables to ensure proper data access control:
+
+- Lawyers and paralegals have access to all records
+- Clients can only access their own records
+- Tasks can be accessed by assignees even if they can't access the full case
+
+### Migrations
+
+Database migrations are managed with Alembic:
+
+```bash
+# Create a new migration
+alembic revision --autogenerate -m "Description of changes"
+
+# Apply migrations
+alembic upgrade head
+
+# Revert to a previous migration
+alembic downgrade <revision_id>
+```
+
 ## License
 
 Proprietary - All Rights Reserved
