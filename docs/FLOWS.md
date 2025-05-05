@@ -34,3 +34,43 @@ sequenceDiagram
     Worker->>TW: Send SMS confirmation (send_sms)
     TW-->>Client: SMS notification about retainer
     Worker->>DB: Update task status (TODO)
+
+```
+
+## DocuSign Webhook and Insurance Notice Flow
+
+The following sequence diagram shows the flow after a client signs a retainer agreement,
+triggering the automatic generation and delivery of Letters of Representation (LOR) to insurance carriers.
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant DS as DocuSign
+    participant API as FastAPI
+    participant Queue as Celery+Redis
+    participant Worker as Celery Worker
+    participant DA as Docassemble
+    participant DB as Supabase
+    participant TW as Twilio
+    participant Mail as SendGrid
+
+    Client->>DS: Signs retainer agreement
+    DS->>API: POST /webhooks/docusign (envelope completed)
+    API->>Queue: Enqueue send_insurance_notice task
+    API-->>DS: 200 OK (webhook acknowledged)
+
+    Note over Worker: Asynchronous processing
+    Queue->>Worker: Process send_insurance_notice task
+    Worker->>DB: Fetch client & insurance data (get_insurance_payload)
+    Worker->>DA: Call /api/v1/generate/letters/lor
+    DA-->>Worker: Return LOR PDF document bytes
+
+    Note over Worker: Send to client's insurer
+    Worker->>TW: Send fax to client's insurance (send_fax)
+
+    Note over Worker: Send to adverse carriers
+    Worker->>TW: Send fax to adverse insurance (send_fax)
+    Worker->>Mail: Email to adjuster with notification (send_mail)
+
+    Worker->>DB: Update task status
+```

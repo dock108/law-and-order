@@ -16,7 +16,8 @@ from fastapi.responses import JSONResponse
 
 from pi_auto_api.config import settings
 from pi_auto_api.db import create_intake
-from pi_auto_api.schemas import IntakePayload, IntakeResponse
+from pi_auto_api.schemas import DocuSignWebhookPayload, IntakePayload, IntakeResponse
+from pi_auto_api.tasks.insurance_notice import send_insurance_notice
 from pi_auto_api.tasks.retainer import generate_retainer
 
 # Configure logging
@@ -289,3 +290,67 @@ async def intake(payload: IntakePayload) -> IntakeResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create intake. Please try again later.",
         ) from e
+
+
+@app.post(
+    "/webhooks/docusign",
+    status_code=status.HTTP_200_OK,
+    summary="DocuSign Connect webhook endpoint",
+)
+async def docusign_webhook(payload: DocuSignWebhookPayload) -> Dict[str, str]:
+    """Process DocuSign webhook for completed envelopes.
+
+    This endpoint receives notifications from DocuSign when a document
+    has been signed. When a retainer agreement is signed, it triggers
+    the insurance notice flow to send LORs to insurance carriers.
+
+    Args:
+        payload: The DocuSign webhook payload
+
+    Returns:
+        Acknowledgment of receipt
+    """
+    logger.info(f"Received DocuSign webhook: envelope_id={payload.envelopeId}")
+
+    # Check if this is a completed envelope event
+    if payload.status != "completed":
+        logger.info(f"Ignoring non-completed envelope: status={payload.status}")
+        return {"status": "ignored", "reason": "not_completed"}
+
+    # In a real implementation, you would verify that this envelope
+    # is for a retainer agreement by checking against a database record.
+    # For now, we'll assume it's a retainer and extract the client_id
+    # from custom fields or the subject line.
+
+    # Extract client_id from payload (in real implementation, this could be a
+    # custom field in the DocuSign envelope or retrieved from database)
+    try:
+        # This is a simplified example; in production you would query DB
+        # to match the envelope_id to your client records
+        if hasattr(payload, "customFields") and payload.customFields:
+            # Try to find client_id from custom fields
+            for field in payload.customFields:
+                if field.name == "client_id":
+                    client_id = int(field.value)
+                    break
+            else:
+                # For demo purposes, extract a numeric ID from email subject
+                # This would be replaced with proper DB lookup in production
+                client_id = int(payload.emailSubject.split("ID:")[-1].strip())
+        else:
+            # Fallback for testing - assume a default ID
+            # In production, this would be a DB lookup
+            client_id = 101
+
+        logger.info(f"Extracted client_id: {client_id}")
+
+        # Queue the insurance notice task
+        send_insurance_notice.delay(client_id)
+        logger.info(f"Queued insurance notice task for client_id: {client_id}")
+
+        return {"status": "success", "client_id": str(client_id)}
+    except Exception as e:
+        logger.error(f"Error processing DocuSign webhook: {str(e)}", exc_info=True)
+        # We still return 200 to DocuSign to acknowledge receipt,
+        # but include error details in the response
+        return {"status": "error", "reason": str(e)}

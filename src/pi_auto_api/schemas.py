@@ -77,7 +77,35 @@ class IncidentOut(BaseModel):
 
 
 class IntakeResponse(BaseModel):
-    """Schema for the intake response."""
+    """Response model for client intake."""
 
     client_id: int
     incident_id: int
+    status: str = "processing"
+
+
+# DocuSign webhook models
+class DocuSignCustomField(BaseModel):
+    """Model for DocuSign envelope custom fields."""
+
+    name: str
+    value: str
+
+
+class DocuSignWebhookPayload(BaseModel):
+    """Model for DocuSign Connect webhook payload.
+
+    This is a simplified version of the actual payload,
+    containing only the fields we need for our application.
+    """
+
+    envelopeId: str
+    status: str
+    emailSubject: str = "Retainer Agreement"
+    customFields: Optional[List[DocuSignCustomField]] = None
+
+    class Config:
+        """Pydantic config."""
+
+        # Allow extra fields in the payload that we don't need
+        extra = "allow"

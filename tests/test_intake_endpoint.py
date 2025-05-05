@@ -72,7 +72,10 @@ async def test_intake_success(
 
     # Assert response status and content
     assert response.status_code == status.HTTP_202_ACCEPTED
-    assert response.json() == {"client_id": 123, "incident_id": 456}
+    response_json = response.json()
+    assert response_json["client_id"] == 123
+    assert response_json["incident_id"] == 456
+    assert response_json["status"] == "processing"
 
     # Assert create_intake was called with correct data
     mock_create_intake.assert_called_once()

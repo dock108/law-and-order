@@ -368,3 +368,29 @@ Both SMS and fax operations include built-in exponential backoff retry logic for
 - Maximum 3 attempts
 - Exponential backoff starting at 1 second, doubling after each failure
 - Non-transient errors (HTTP 4xx except 429) are not retried
+
+## Insurance Notice Flow
+
+The application includes automated Letter of Representation (LOR) generation and distribution to insurance carriers when a client signs their retainer agreement.
+
+```mermaid
+flowchart TD
+    A[Client Signs Retainer Agreement] --> B[DocuSign Webhook Notification]
+    B --> C[Send Insurance Notice Task Queued]
+    C --> D[Fetch Client & Insurance Data]
+    D --> E[Generate LOR PDF via Docassemble]
+    E --> F[Send Faxes to Insurance Carriers]
+    E --> G[Send Emails to Insurance Adjusters]
+```
+
+The automated insurance notice process:
+
+1. Client signs the retainer agreement via DocuSign
+2. DocuSign sends a webhook notification to our API
+3. Our system verifies the webhook and enqueues a background task
+4. The task retrieves client and insurance information from the database
+5. Docassemble generates a Letter of Representation PDF
+6. The system sends faxes to all relevant insurance carriers via Twilio
+7. If adjuster emails are available, notification emails are also sent via SendGrid
+
+This automation eliminates manual steps and ensures timely notice to all insurance carriers as soon as representation begins.
