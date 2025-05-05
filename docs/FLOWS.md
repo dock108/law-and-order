@@ -17,6 +17,7 @@ sequenceDiagram
     participant Worker as Celery Worker
     participant DA as Docassemble
     participant DS as DocuSign
+    participant TW as Twilio
 
     Client->>API: POST /intake
     API->>DB: Create client & incident
@@ -30,4 +31,6 @@ sequenceDiagram
     DA-->>Worker: Return PDF document bytes
     Worker->>DS: Send envelope for e-signature (send_envelope)
     DS-->>Client: Email with signing link
+    Worker->>TW: Send SMS confirmation (send_sms)
+    TW-->>Client: SMS notification about retainer
     Worker->>DB: Update task status (TODO)

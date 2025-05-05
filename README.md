@@ -317,3 +317,54 @@ await send_mail(
 ```
 
 For a complete list of available email templates and context variables, see the [Template Reference](docs/TEMPLATE_REFERENCE.md).
+
+## SMS & Fax Adapter
+
+The application includes a Twilio adapter for sending SMS messages and faxes.
+
+### Configuration
+
+1. Set up your Twilio credentials in the `.env` file:
+
+```bash
+TWILIO_ACCOUNT_SID=your_twilio_account_sid
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_SMS_FROM=+15551234567
+TWILIO_FAX_FROM=+15551234567
+```
+
+### Sending SMS Messages
+
+To send an SMS notification to a client:
+
+```python
+from pi_auto_api.externals.twilio_client import send_sms
+
+# Example: Send confirmation SMS
+await send_sms(
+    to="+15557654321",
+    body="Your retainer agreement has been sent. Please check your email to sign it."
+)
+```
+
+### Sending Faxes
+
+To send a fax to an insurance company or medical provider:
+
+```python
+from pi_auto_api.externals.twilio_client import send_fax
+
+# Example: Send letter of representation
+await send_fax(
+    to="+15557654321",
+    media_url="https://example.com/documents/letter_of_representation.pdf"
+)
+```
+
+### Retry Logic
+
+Both SMS and fax operations include built-in exponential backoff retry logic for transient errors (HTTP 5xx and 429):
+
+- Maximum 3 attempts
+- Exponential backoff starting at 1 second, doubling after each failure
+- Non-transient errors (HTTP 4xx except 429) are not retried

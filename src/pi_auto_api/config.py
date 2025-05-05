@@ -29,6 +29,10 @@ class Settings(BaseSettings):
         DOCUSIGN_USER_ID: DocuSign User ID (GUID)
         DOCUSIGN_PRIVATE_KEY: Path to the DocuSign private key file
         SENDGRID_API_KEY: API key for SendGrid
+        TWILIO_ACCOUNT_SID: Twilio Account SID
+        TWILIO_AUTH_TOKEN: Twilio Auth Token
+        TWILIO_SMS_FROM: Phone number to send SMS from
+        TWILIO_FAX_FROM: Phone number to send faxes from
     """
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
@@ -55,6 +59,12 @@ class Settings(BaseSettings):
 
     # SendGrid settings
     SENDGRID_API_KEY: Optional[str] = None
+
+    # Twilio settings
+    TWILIO_ACCOUNT_SID: Optional[str] = None
+    TWILIO_AUTH_TOKEN: Optional[str] = None
+    TWILIO_SMS_FROM: Optional[str] = None
+    TWILIO_FAX_FROM: Optional[str] = None
 
     @field_validator("DOCUSIGN_PRIVATE_KEY")
     @classmethod
