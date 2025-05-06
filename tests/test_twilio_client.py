@@ -4,8 +4,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
-from pi_auto_api.externals.twilio_client import send_fax, send_sms
 from twilio.base.exceptions import TwilioRestException
+
+from pi_auto_api.externals.twilio_client import send_fax, send_sms
 
 # Test constants
 TEST_PHONE = "+15551234567"

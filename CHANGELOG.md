@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - YYYY-MM-DD
+
+### Added
+- **Automated Demand Package Assembly**
+  - Added `pikepdf` dependency for PDF manipulation.
+  - Created demand package assembly system: `utils/package_rules.py`, `tasks/demand.py`, `utils/pdf_merge.py`.
+  - Implemented PDF merging utility `utils.pdf_merge.merge_pdfs` for combining documents.
+  - Added `is_demand_ready` function to check if an incident has all required documents for demand package creation.
+  - Implemented `assemble_demand_package` Celery task to build demand packages from medical records, bills, damages worksheet, and liability photos.
+  - Added `check_and_build_demand` nightly task that runs at 3 AM to find eligible incidents and create demand packages.
+  - Added comprehensive unit tests for PDF merging and demand package assembly.
+  - Updated documentation with demand package assembly workflow.
+
 ## [1.4.0] - 2025-05-06
 ### Added
 - Automated damages worksheet generation (Excel & PDF) triggered by new medical bills.

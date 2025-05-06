@@ -5,11 +5,11 @@ from typing import Dict
 import asyncpg
 from celery.utils.log import get_task_logger
 
+from pi_auto_api.celery_app import app
 from pi_auto_api.config import settings
 from pi_auto_api.db import get_provider_payload
 from pi_auto_api.externals.docassemble import generate_letter
 from pi_auto_api.externals.twilio_client import send_fax
-from pi_auto_api.tasks import app
 from pi_auto_api.utils.storage import upload_to_bucket
 
 # Use the Celery logger for tasks
@@ -56,8 +56,7 @@ async def send_medical_record_requests() -> Dict[str, int]:
 
         pending_providers = await conn.fetch(query)
         logger.info(
-            f"Found {len(pending_providers)} providers "
-            f"needing medical records requests"
+            f"Found {len(pending_providers)} providers needing medical records requests"
         )
 
         for provider in pending_providers:

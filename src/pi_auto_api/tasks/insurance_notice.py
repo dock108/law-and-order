@@ -3,11 +3,14 @@
 import asyncio
 import logging
 
+# from pi_auto_api.config import settings # Unused
+from pi_auto_api.celery_app import app  # Corrected import
 from pi_auto_api.db import get_insurance_payload
+
+# from pi_auto_api.db import get_insurance_payload_for_lor # Unused
 from pi_auto_api.externals.docassemble import generate_letter
 from pi_auto_api.externals.sendgrid_client import send_mail
 from pi_auto_api.externals.twilio_client import send_fax
-from pi_auto_api.tasks import app
 
 logger = logging.getLogger(__name__)
 

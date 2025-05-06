@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 from fastapi import HTTPException
+
 from pi_auto_api.externals.docassemble import generate_retainer_pdf
 
 SAMPLE_PAYLOAD = {"client": {"name": "Test"}}

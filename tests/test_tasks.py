@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
+
 from pi_auto_api.tasks.retainer import _run_retainer_flow
 
 

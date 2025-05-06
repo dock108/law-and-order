@@ -6,6 +6,7 @@ from datetime import datetime
 
 import httpx
 from fastapi import HTTPException, status
+
 from pi_auto_api.config import settings
 
 logger = logging.getLogger(__name__)
@@ -101,3 +102,114 @@ async def upload_to_bucket(pdf_bytes: bytes) -> str:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Unexpected error: {exc}",
             ) from exc
+
+
+async def upload_file(doc_id: str, content_bytes: bytes, content_type: str) -> bool:
+    """Upload a file to Supabase Storage under a specific doc_id.
+
+    Args:
+        doc_id: The unique ID of the document, used as the filename.
+        content_bytes: Raw bytes of the file to upload.
+        content_type: The MIME type of the file (e.g., 'application/pdf').
+
+    Returns:
+        True if upload was successful, False otherwise.
+
+    Raises:
+        ValueError: If Supabase credentials are not configured.
+    """
+    if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
+        logger.error("Supabase credentials not configured for upload_file")
+        raise ValueError("Supabase credentials not configured for upload_file")
+
+    bucket_name = "documents"  # Or your general documents bucket
+    # Using doc_id as the filename to ensure uniqueness and direct relation
+    object_path = f"generated/{doc_id}"
+
+    upload_url = (
+        f"{settings.SUPABASE_URL}/storage/v1/object/{bucket_name}/{object_path}"
+    )
+    headers = {
+        "Authorization": f"Bearer {settings.SUPABASE_KEY}",
+        "Content-Type": content_type,
+    }
+
+    async with httpx.AsyncClient() as client:
+        try:
+            upload_response = await client.post(
+                upload_url, content=content_bytes, headers=headers, timeout=30.0
+            )
+            upload_response.raise_for_status()
+            logger.info(f"Successfully uploaded file {doc_id} to {object_path}")
+            return True
+        except httpx.RequestError as exc:
+            logger.error(
+                f"Error uploading file {doc_id} to Supabase: {exc}", exc_info=True
+            )
+            return False
+        except httpx.HTTPStatusError as exc:
+            logger.error(
+                f"Supabase API error for {doc_id} ({exc.response.status_code}): "
+                f"{exc.response.text}",
+                exc_info=True,
+            )
+            return False
+        except Exception as exc:
+            logger.error(
+                f"Unexpected error uploading file {doc_id}: {exc}", exc_info=True
+            )
+            return False
+
+
+async def get_file_content(doc_id: str) -> bytes | None:
+    """Retrieve the content of a file from Supabase Storage using its doc_id.
+
+    Assumes the file was stored using the doc_id as its name in a 'generated' path.
+
+    Args:
+        doc_id: The unique ID of the document (used as filename).
+
+    Returns:
+        The file content as bytes if successful, None otherwise.
+
+    Raises:
+        ValueError: If Supabase credentials are not configured.
+    """
+    if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
+        logger.error("Supabase credentials not configured for get_file_content")
+        raise ValueError("Supabase credentials not configured for get_file_content")
+
+    bucket_name = "documents"
+    object_path = f"generated/{doc_id}"  # Assuming files are stored here by upload_file
+
+    download_url = (
+        f"{settings.SUPABASE_URL}/storage/v1/object/{bucket_name}/{object_path}"
+    )
+    headers = {"Authorization": f"Bearer {settings.SUPABASE_KEY}"}
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(download_url, headers=headers, timeout=30.0)
+            response.raise_for_status()
+            logger.info(f"Successfully retrieved file content for {doc_id}")
+            return response.content
+        except httpx.RequestError as exc:
+            logger.error(
+                f"Error downloading file {doc_id} from Supabase: {exc}", exc_info=True
+            )
+            return None
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                logger.warning(f"File {doc_id} not found in Supabase at {object_path}.")
+            else:
+                logger.error(
+                    f"Supabase API error for {doc_id} ({exc.response.status_code}): "
+                    f"{exc.response.text}",
+                    exc_info=True,
+                )
+            return None
+        except Exception as exc:
+            logger.error(
+                f"Unexpected error downloading file {doc_id}: {exc}", exc_info=True
+            )
+            return None

@@ -9,6 +9,7 @@ import pytest
 import pytest_asyncio
 from fastapi import HTTPException, status
 from httpx import AsyncClient
+
 from pi_auto_api.main import app, check_database, check_docassemble
 
 # Set test environment variables for settings

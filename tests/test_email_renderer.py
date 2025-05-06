@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from jinja2.exceptions import TemplateError
+
 from pi_auto_api.utils.email_renderer import render_email_template
 
 # Test data

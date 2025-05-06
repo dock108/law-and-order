@@ -10,7 +10,7 @@ repos:
       - id: check-added-large-files
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.1.11
+    rev: v0.11.8
     hooks:
       - id: ruff
         args: [--fix]
@@ -27,11 +27,12 @@ repos:
     hooks:
       - id: pytest
         name: pytest
-        entry: poetry run pytest
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && poetry install --no-root --sync && poetry run pytest'
         language: system
         pass_filenames: false
         always_run: true
         additional_dependencies: []
+        require_serial: true
 
   - repo: local
     hooks:

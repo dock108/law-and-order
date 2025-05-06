@@ -2,10 +2,11 @@
 
 import pytest
 import pytest_asyncio
-from pi_auto.db import crud
-from pi_auto.db.models import Base, Client
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+
+from pi_auto.db import crud
+from pi_auto.db.models import Base, Client
 
 # Use in-memory SQLite database for testing
 TEST_ASYNC_DATABASE_URL = "sqlite+aiosqlite:///:memory:"

@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import asyncpg
 import pytest
+
 from pi_auto_api.db import get_client_payload
 
 # Sample data returned by mock fetchrow

@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, patch  # Removed MagicMock
 
 import pandas as pd
 import pytest
+
 from pi_auto_api.config import settings
 from pi_auto_api.tasks.damages import build_damages_worksheet
 

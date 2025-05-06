@@ -5,10 +5,11 @@ from typing import Any, Dict, Optional
 
 import asyncpg
 
+from pi_auto_api.celery_app import app
 from pi_auto_api.config import settings
-from pi_auto_api.tasks import app
-from pi_auto_api.tasks.damages import (
-    build_damages_worksheet,  # Uncommented and corrected
+
+from .damages import (
+    build_damages_worksheet,  # Corrected to relative import
 )
 
 logger = logging.getLogger(__name__)

@@ -3,6 +3,7 @@
 import pytest
 from fastapi import status
 from httpx import AsyncClient
+
 from pi_auto_api.main import app, check_database, check_docassemble
 
 

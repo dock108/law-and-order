@@ -13,8 +13,8 @@ import pandas as pd
 # import xlsxwriter # Handled by pandas engine
 from weasyprint import HTML
 
+from pi_auto_api.celery_app import app
 from pi_auto_api.config import settings
-from pi_auto_api.tasks import app
 from pi_auto_api.utils.storage import upload_to_bucket
 
 logger = logging.getLogger(__name__)
@@ -164,7 +164,7 @@ async def build_damages_worksheet(incident_id: int) -> Dict[str, Any]:
           <body>
             <h1>Damages Worksheet</h1>
             <h3>Incident ID: {incident_id}</h3>
-            {df.to_html(index=False, classes='table table-striped')}
+            {df.to_html(index=False, classes="table table-striped")}
             <table class='table'>
                 <tr class='total-row'>
                     <td><strong>Total Damages</strong></td>

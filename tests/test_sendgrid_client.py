@@ -4,8 +4,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
-from pi_auto_api.externals.sendgrid_client import send_mail
 from sendgrid.helpers.mail import Mail
+
+from pi_auto_api.externals.sendgrid_client import send_mail
 
 # Test data
 TEST_EMAIL = "client@example.com"

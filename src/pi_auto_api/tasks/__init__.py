@@ -1,29 +1,24 @@
-"""Celery task queue configuration and tasks for background processing."""
+"""Celery task discovery and package initialization."""
 
-from celery import Celery
-from celery.schedules import crontab
+# Import the Celery application instance first
+from pi_auto_api.celery_app import app
 
-from pi_auto_api.config import settings
-
-app = Celery(
-    "pi_tasks",
-    broker=settings.REDIS_URL,
-    backend=settings.REDIS_URL,
-    include=[
-        "pi_auto_api.tasks.retainer",
-        "pi_auto_api.tasks.insurance_notice",
-        "pi_auto_api.tasks.medical_records",
-        "pi_auto_api.tasks.billing",
-        "pi_auto_api.tasks.damages",
-    ],
+# Import task modules to ensure tasks are registered with Celery
+from . import (
+    billing,
+    damages,
+    demand,
+    insurance_notice,
+    medical_records,
+    retainer,
 )
-app.conf.task_default_queue = "default"
 
-# Configure Beat schedule
-# Note: Using 2:00 AM Eastern Time (America/New_York)
-app.conf.beat_schedule = {
-    "nightly-medical-record-request": {
-        "task": "send_medical_record_requests",
-        "schedule": crontab(hour=2, minute=0),
-    }
-}
+__all__ = (
+    "app",  # Expose app for potential direct use (e.g., by tests)
+    "billing",
+    "damages",
+    "demand",
+    "insurance_notice",
+    "medical_records",
+    "retainer",
+)

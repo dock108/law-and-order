@@ -138,6 +138,59 @@ When a new medical bill document is added to the system (e.g., via the `process_
 
 *(Placeholder for a screenshot of the generated damages worksheet)*
 
+### Automated Damages Worksheets
+
+When new medical bills are logged, the system automatically generates and stores Excel (.xlsx) and PDF (.pdf) damages worksheets. These worksheets summarize all medical bills for an incident, calculate total damages, and are uploaded to cloud storage. This feature is triggered by the `process_medical_bill` task which in turn calls `build_damages_worksheet`.
+
+### Automated Demand Package Assembly
+
+The system automatically assembles demand packages when all required documents for an incident are present. This process runs nightly, checking eligible incidents and creating merged PDF packages.
+
+1. **Document Requirements**: A demand package requires:
+   - Medical records for the incident
+   - At least one medical bill for each provider associated with the incident
+   - Damages worksheet PDF
+   - Liability photos
+   - No existing demand package for the incident
+
+2. **Package Assembly Process**:
+   ```mermaid
+   sequenceDiagram
+       participant CB as Celery Beat
+       participant Worker as Celery Worker
+       participant DB as Supabase
+       participant Storage as Supabase Storage
+
+       Note over CB: 3:00 AM ET Daily
+       CB->>Worker: Trigger check_and_build_demand task
+       Worker->>DB: Query for incidents without demand packages
+
+       loop For each incident
+           Worker->>DB: Check if incident meets criteria
+           alt All requirements met
+               Worker->>DB: Fetch all required documents
+               Worker->>Storage: Get document content for each doc
+               Worker->>Worker: Merge PDFs into single document
+               Worker->>DB: Create demand_package doc record
+               Worker->>Storage: Upload merged PDF
+               Worker->>DB: Update with file URL
+           end
+       end
+
+       Worker-->>CB: Task complete
+   ```
+
+3. **On-Demand Assembly**: The demand package can also be manually triggered for a specific incident via the API:
+   ```bash
+   curl -X POST http://localhost:8000/demand/create/{incident_id}
+   ```
+
+4. **Document Order**: Documents in the merged PDF follow a specific order:
+   - Damages worksheet (summary of costs)
+   - Liability photos
+   - Medical records
+   - Medical bills
+
 ## Development
 
 ### Pre-commit Hooks

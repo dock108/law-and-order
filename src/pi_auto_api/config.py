@@ -100,3 +100,31 @@ class Settings(BaseSettings):
 
 # Create a global settings instance
 settings = Settings()
+
+# Celery Configuration - mapped from the Settings instance
+# These need to be top-level attributes in this module for Celery to pick them up
+# when using app.config_from_object("pi_auto_api.config")
+
+broker_url = settings.REDIS_URL
+result_backend = settings.REDIS_URL
+task_serializer = "json"
+result_serializer = "json"
+accept_content = ["json"]
+timezone = "UTC"
+enable_utc = True
+# Optional: Define task_routes if you have specific routing needs
+# task_routes = {
+#     'pi_auto_api.tasks.some_task': {'queue': 'special_queue'},
+# }
+
+# Optional: Add beat_schedule here if you prefer it over celery_app.py
+# beat_schedule = {
+#     "nightly-medical-record-request": {
+#         "task": "send_medical_record_requests", # Ensure task name matches definition
+#         "schedule": crontab(hour=2, minute=0),
+#     },
+#     "nightly-demand-package-check": {
+#         "task": "check_and_build_demand", # Ensure task name matches definition
+#         "schedule": crontab(hour=3, minute=0),
+#     },
+# }

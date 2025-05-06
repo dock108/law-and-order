@@ -3,10 +3,10 @@
 import asyncio
 import logging
 
+from pi_auto_api.celery_app import app
 from pi_auto_api.db import get_client_payload
 from pi_auto_api.externals.docassemble import generate_retainer_pdf
 from pi_auto_api.externals.docusign import send_envelope
-from pi_auto_api.tasks import app
 
 logger = logging.getLogger(__name__)
 

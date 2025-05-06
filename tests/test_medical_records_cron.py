@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
+
 from pi_auto_api.config import settings
 from pi_auto_api.tasks.medical_records import send_medical_record_requests
 

@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi import HTTPException, status
 from httpx import AsyncClient, HTTPError
+
 from pi_auto_api.main import app, check_database, check_docassemble
 
 

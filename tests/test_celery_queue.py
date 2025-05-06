@@ -1,6 +1,7 @@
 """Tests for the Celery app configuration and task discovery."""
 
 import pytest
+
 from pi_auto_api.tasks import app as celery_app
 from pi_auto_api.tasks.retainer import generate_retainer
 
