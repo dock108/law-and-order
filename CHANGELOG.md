@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - YYYY-MM-DD
+
+### Added
+- **Full Happy-Path Integration Test & Nightly CI**
+  - Created comprehensive end-to-end integration test simulating the entire PI case lifecycle.
+  - Added test fixtures for mocking external services (Docassemble, DocuSign, Twilio, SendGrid).
+  - Implemented database session with transaction rollback for clean test isolation.
+  - Created Celery eager execution fixture for synchronous task testing.
+  - Added GitHub Actions workflow for nightly integration testing (runs at 02:30 UTC).
+  - Set up CI for full test environment with PostgreSQL, Redis, and Docassemble services.
+  - Added JUnit and coverage report generation and artifact publishing.
+  - Updated README with details on running integration tests locally.
+
 ## [1.7.0] - YYYY-MM-DD
 
 ### Added

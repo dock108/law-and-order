@@ -555,3 +555,37 @@ The automated insurance notice process:
 7. If adjuster emails are available, notification emails are also sent via SendGrid
 
 This automation eliminates manual steps and ensures timely notice to all insurance carriers as soon as representation begins.
+
+## End-to-End Test
+
+The project includes a comprehensive end-to-end integration test that simulates the complete lifecycle of a personal injury case, from intake to settlement disbursement.
+
+### Running Integration Tests Locally
+
+Integration tests are marked with `pytest.mark.integration` and can be run specifically:
+
+```bash
+# Run all integration tests
+pytest -m integration
+
+# Run the happy path test specifically
+pytest -m integration tests/integration/test_happy_path.py
+```
+
+### Integration Test Process
+
+The happy path integration test follows these steps:
+
+1. **Client Intake**: Creates a client and incident via the `/intake` API endpoint
+2. **Retainer Agreement**: Simulates DocuSign callback when retainer is signed
+3. **Insurance Notices**: Verifies LORs are sent to insurance carriers
+4. **Medical Bills**: Creates providers and medical bills, triggers damages worksheet generation
+5. **Medical Records Requests**: Simulates the nightly cron job for sending record requests
+6. **Demand Package**: Builds demand package from uploaded documents
+7. **Settlement**: Finalizes the settlement and generates a disbursement sheet
+
+### Nightly CI Workflow
+
+A scheduled GitHub Actions workflow runs the integration test nightly at 02:30 UTC on the main branch. This runs the complete test suite with real services (PostgreSQL, Redis, Docassemble) to ensure the entire system functions correctly.
+
+To view the latest test results, check the [Actions tab](https://github.com/law-and-order/pi-auto/actions/workflows/integration-test.yml) in the GitHub repository.
