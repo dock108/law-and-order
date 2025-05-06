@@ -5,7 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2025-05-13
+## [1.3.0] - 2025-05-06
+### Added
+- Nightly medical-records request fax automation
+- Celery Beat scheduler for running tasks at regular intervals
+- Medical records request task that runs daily at 2:00 AM ET
+- Database helper for retrieving provider payload data
+- Supabase Storage integration for document uploads and signed URLs
+- HIPAA-compliant medical records request letter generation
+- Integration with Twilio for automated fax delivery
+- Tracking of sent requests in the database
+- Unit tests with mocked external services
+- Updated documentation with process flow diagrams
+
+## [1.2.0] - 2025-05-04
 ### Added
 - Automated Letter of Representation (LOR) to insurers when retainer is signed
 - DocuSign webhook endpoint to receive envelope completion notifications
@@ -15,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive unit tests for webhook and task
 - Documentation of the insurance notice flow in README and FLOWS.md
 
-## [1.1.0] - 2025-05-12
+## [1.1.0] - 2025-05-04
 ### Added
 - Twilio SMS/Fax adapter with exponential backoff retry logic
 - Utility functions to send SMS notifications to clients
@@ -25,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation for SMS & Fax adapter usage
 - Updated process flow to include SMS notifications
 
-## [1.0.0] - 2025-05-11
+## [1.0.0] - 2025-05-04
 ### Added
 - SendGrid email adapter for sending transactional emails
 - Jinja2 templating engine for rendering email templates
@@ -36,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation for email templates and merge fields
 - Updated README with Email Adapter usage section
 
-## [0.9.0] - 2025-05-10
+## [0.9.0] - 2025-05-04
 ### Added
 - Fully implemented `generate_retainer` Celery task.
 - Fetches client/incident data from the database.
@@ -49,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added unit tests for the `generate_retainer` task with mocked external services.
 - Updated README and FLOWS.md with detailed retainer generation flow.
 
-## [0.8.0] - 2025-05-10
+## [0.8.0] - 2025-05-04
 ### Added
 - Celery + Redis background queue for asynchronous tasks
 - Redis service with docker-compose integration
@@ -59,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extended documentation with sequence diagrams in FLOWS.md
 - Unit and integration tests for the task queue
 
-## [0.7.0] - 2025-05-05
+## [0.7.0] - 2025-05-04
 ### Added
 - Client intake endpoint (`/intake`) to store client and incident data
 - Database integration for client intake process
@@ -67,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive validation and error handling for the intake process
 - Unit tests for the intake endpoint
 
-## [0.6.0] - 2025-05-05
+## [0.6.0] - 2025-05-04
 ### Added
 - FastAPI skeleton with health and readiness endpoints.
 - Config module using pydantic-settings for environment variables management.
@@ -82,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated dependencies to include FastAPI, Uvicorn, and HTTPX.
 - Added API badge to README.
 
-## [0.5.0] - 2025-05-05
+## [0.5.0] - 2025-05-04
 ### Added
 - Retainer agreement interview in Docassemble.
 - Document generation API for automated PDF creation.
@@ -92,7 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extended health check script to test the API.
 - Documentation for API usage and template mapping.
 
-## [0.4.0] - 2025-05-05
+## [0.4.0] - 2025-05-04
 ### Added
 - Dockerized Docassemble stack.
 - Docker Compose setup for Docassemble and PostgreSQL.
@@ -101,7 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI integration for testing Docassemble setup.
 - Documentation for Docassemble integration in README.md and TEMPLATE_REFERENCE.md.
 
-## [0.3.1] - 2025-05-05
+## [0.3.1] - 2025-05-04
 ### Added
 - Row-Level Security (RLS) test suite (`tests/test_rls.py`) using `asyncpg`.
 - PostgreSQL service container and seeding to CI workflow for RLS testing.
@@ -113,7 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated CI workflow for database testing and coverage checks.
 - Alembic `env.py` modified to rely on Alembic's async runner.
 
-## [0.3.0] - 2025-05-05
+## [0.3.0] - 2025-05-04
 ### Added
 - Initial database schema migration (`0001_initial_schema.py`) with tables (`client`, `incident`, `insurance`, `provider`, `doc`, `task`) and basic RLS policies.
 - SQLAlchemy ORM models (`src/pi_auto/db/models.py`).
@@ -128,7 +141,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configured `pytest` and related dependencies (`pytest-asyncio`, `asyncpg`, `greenlet`).
 - Configured pre-commit hooks for linting, formatting, and testing.
 
-## [0.2.0] - 2025-05-05
+## [0.2.0] - 2025-05-04
 
 ### Added
 - Centralized template system in `templates/` directory
@@ -138,7 +151,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Organized templates by purpose (intake, correspondence, medical, settlement, workflow)
 - Template unit tests to verify PII compliance
 
-## [0.1.0] - 2025-05-05
+## [0.1.0] - 2025-05-04
 
 ### Added
 

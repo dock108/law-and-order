@@ -74,3 +74,35 @@ sequenceDiagram
 
     Worker->>DB: Update task status
 ```
+
+## Nightly Medical-Records Request Flow
+
+The following diagram shows the automated nightly process for sending medical record requests to healthcare providers who haven't sent records yet.
+
+```mermaid
+sequenceDiagram
+    participant CB as Celery Beat
+    participant Worker as Celery Worker
+    participant DB as Supabase
+    participant DA as Docassemble
+    participant Storage as Supabase Storage
+    participant TW as Twilio
+    participant Provider
+
+    Note over CB: 2:00 AM ET Daily
+    CB->>Worker: Trigger send_medical_record_requests task
+    Worker->>DB: Query for providers needing records
+
+    loop For each pending provider
+        Worker->>DB: Get provider payload data
+        Worker->>DA: Generate medical records request letter
+        DA-->>Worker: Return PDF document bytes
+        Worker->>Storage: Upload PDF (upload_to_bucket)
+        Storage-->>Worker: Return signed URL (24h)
+        Worker->>TW: Send fax to provider (send_fax)
+        Worker->>DB: Log request in documents table
+    end
+
+    Note over Provider: Later...
+    Provider->>DB: Medical records received and logged
+```

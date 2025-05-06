@@ -44,6 +44,24 @@ services:
     networks:
       - pi-network
 
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/app
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - DOCASSEMBLE_URL=${DOCASSEMBLE_URL}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - celery_worker
+    command: celery -A pi_auto_api.tasks beat --loglevel=INFO --schedule /tmp/beat-schedule
+    networks:
+      - pi-network
+
 networks:
   pi-network:
     driver: bridge

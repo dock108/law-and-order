@@ -89,6 +89,36 @@ poetry run uvicorn pi_auto_api.main:app --reload
      }'
    ```
 
+### Nightly Medical-Records Request
+
+The system automatically generates and faxes HIPAA-compliant medical record requests to healthcare providers nightly at 2:00 AM ET.
+
+```
+┌───────────┐     ┌──────────────┐     ┌──────────────────┐     ┌───────────┐     ┌─────────────┐
+│           │     │              │     │                  │     │           │     │             │
+│ Celery    │────▶│ Query for    │────▶│ Generate Medical │────▶│ Upload to │────▶│ Send Fax    │
+│ Beat      │     │ Providers    │     │ Records Request  │     │ Storage   │     │ via Twilio  │
+│ (2:00 AM) │     │ Needing      │     │ Letter PDF      │     │           │     │             │
+│           │     │ Records      │     │                  │     │           │     │             │
+└───────────┘     └──────────────┘     └──────────────────┘     └───────────┘     └──────┬──────┘
+                                                                                         │
+                                                                                         ▼
+                                    ┌───────────────────┐                        ┌──────────────┐
+                                    │                   │                        │              │
+                                    │ Provider Sends    │◀───────────────────────│ Log Request  │
+                                    │ Medical Records   │                        │ in Database  │
+                                    │                   │                        │              │
+                                    └───────────────────┘                        └──────────────┘
+```
+
+The process flow:
+1. Celery Beat triggers the task at 2:00 AM ET every day
+2. The task queries the database for providers who haven't sent records yet
+3. For each provider, a HIPAA-compliant request letter is generated via Docassemble
+4. The letter is uploaded to Supabase Storage with a 24-hour signed URL
+5. The letter is faxed to the provider using Twilio's fax service
+6. The system logs each request in the database for tracking
+
 ## Development
 
 ### Pre-commit Hooks

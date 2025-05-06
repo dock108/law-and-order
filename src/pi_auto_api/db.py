@@ -5,6 +5,7 @@ This module contains helpers for database operations.
 
 import json
 import logging
+from datetime import datetime
 from typing import Dict
 
 import asyncpg
@@ -278,5 +279,103 @@ async def get_insurance_payload(client_id: int) -> dict:
         raise
     finally:
         # Ensure connection is closed even if an exception occurs
+        if conn:
+            await conn.close()
+
+
+async def get_provider_payload(incident_id: int, provider_id: int) -> dict:
+    """Fetch client, incident, and provider data for medical records request.
+
+    Args:
+        incident_id: The ID of the incident
+        provider_id: The ID of the healthcare provider
+
+    Returns:
+        A dictionary containing client, incident, and provider data formatted for
+        use with Docassemble medical records request template
+
+    Raises:
+        ValueError: If the client, incident, or provider data is not found
+        Exception: If there is a database error
+    """
+    if not settings.SUPABASE_URL:
+        raise ValueError("SUPABASE_URL is not set")
+
+    conn = None
+    try:
+        conn = await asyncpg.connect(settings.SUPABASE_URL)
+
+        # Fetch client, incident, and provider data in a single query
+        query = """
+        SELECT
+            c.id AS client_id,
+            c.full_name AS client_name,
+            c.dob AS client_dob,
+            c.phone AS client_phone,
+            c.email AS client_email,
+            c.address AS client_address,
+            i.id AS incident_id,
+            i.date AS incident_date,
+            i.location AS incident_location,
+            i.injuries AS incident_injuries,
+            p.id AS provider_id,
+            p.name AS provider_name,
+            p.address AS provider_address,
+            p.phone AS provider_phone,
+            p.fax AS provider_fax,
+            p.specialty AS provider_specialty
+        FROM client c
+        JOIN incident i ON c.id = i.client_id
+        JOIN provider p ON p.id = $2
+        WHERE i.id = $1
+        """
+
+        record = await conn.fetchrow(query, incident_id, provider_id)
+
+        if not record:
+            raise ValueError(
+                f"No data found for incident ID {incident_id} "
+                f"and provider ID {provider_id}"
+            )
+
+        # Shape the data for Docassemble
+        payload = {
+            "client": {
+                "id": record["client_id"],
+                "full_name": record["client_name"],
+                "dob": str(record["client_dob"]),
+                "phone": record["client_phone"],
+                "email": record["client_email"],
+                "address": record["client_address"],
+            },
+            "incident": {
+                "id": record["incident_id"],
+                "date": str(record["incident_date"]),
+                "location": record["incident_location"],
+                "injuries": json.loads(record["incident_injuries"]),
+            },
+            "provider": {
+                "id": record["provider_id"],
+                "name": record["provider_name"],
+                "address": record["provider_address"],
+                "phone": record["provider_phone"],
+                "fax": record["provider_fax"],
+                "specialty": record["provider_specialty"],
+            },
+            "letter_date": datetime.now().strftime("%B %d, %Y"),
+            "law_firm": {
+                "name": "Law & Order Legal Services",
+                "address": "123 Legal Street, New York, NY 10001",
+                "phone": "(212) 555-1212",
+                "fax": "(212) 555-1213",
+                "email": "contact@lawandorder.legal",
+            },
+        }
+
+        return payload
+    except Exception as e:
+        logger.error(f"Error fetching provider data: {str(e)}", exc_info=True)
+        raise
+    finally:
         if conn:
             await conn.close()

@@ -89,6 +89,18 @@ jobs:
         DOCASSEMBLE_URL: http://localhost:5000
         REDIS_URL: redis://localhost:6379/0
 
+    - name: Start Celery beat in background
+      run: |
+        source .venv/bin/activate
+        # Start Celery beat in background
+        celery --app pi_auto_api.tasks:app beat --loglevel=INFO --schedule /tmp/beat-schedule > celery_beat.log 2>&1 &
+        echo "Celery beat started in background"
+      env:
+        SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+        SUPABASE_KEY: dummy-key
+        DOCASSEMBLE_URL: http://localhost:5000
+        REDIS_URL: redis://localhost:6379/0
+
     - name: Run Alembic migrations
       run: |
         # Source the venv - adjust path if needed based on poetry config
