@@ -13,6 +13,8 @@ app = Celery(
         "pi_auto_api.tasks.retainer",
         "pi_auto_api.tasks.insurance_notice",
         "pi_auto_api.tasks.medical_records",
+        "pi_auto_api.tasks.billing",
+        "pi_auto_api.tasks.damages",
     ],
 )
 app.conf.task_default_queue = "default"

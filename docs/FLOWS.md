@@ -106,3 +106,44 @@ sequenceDiagram
     Note over Provider: Later...
     Provider->>DB: Medical records received and logged
 ```
+
+## Damages Worksheet Generation Flow
+
+This diagram shows the process triggered when a medical bill is processed, leading to the generation of damages worksheets.
+
+```mermaid
+sequenceDiagram
+    participant ClientApp as Client/External Source
+    participant API
+    participant BillingTask as process_medical_bill
+    participant DamagesTask as build_damages_worksheet
+    participant DB as Supabase
+    participant Storage as Supabase Storage
+
+    ClientApp->>API: Upload Medical Bill (PDF/Data)
+    API->>BillingTask: Queue process_medical_bill task (incident_id, provider_id, url, [amount])
+
+    BillingTask->>DB: Insert 'medical_bill' doc row (with amount)
+    DB-->>BillingTask: Return doc_id
+    BillingTask->>DamagesTask: Queue build_damages_worksheet task (incident_id)
+
+    DamagesTask->>DB: Query all 'medical_bill' docs for incident
+    DB-->>DamagesTask: Return bill records
+
+    Note over DamagesTask: Calculate total damages, build DataFrame
+    Note over DamagesTask: Generate Excel bytes (pandas)
+    Note over DamagesTask: Generate PDF bytes (pandas + weasyprint)
+
+    DamagesTask->>Storage: Upload Excel bytes
+    Storage-->>DamagesTask: Return Excel URL
+    DamagesTask->>Storage: Upload PDF bytes
+    Storage-->>DamagesTask: Return PDF URL
+
+    DamagesTask->>DB: Insert 'damages_worksheet_excel' doc row
+    DamagesTask->>DB: Insert 'damages_worksheet_pdf' doc row
+
+    DamagesTask-->>BillingTask: (Optional) Return status/URLs
+
+```
+
+## Core Technologies

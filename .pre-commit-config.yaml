@@ -27,7 +27,7 @@ repos:
     hooks:
       - id: pytest
         name: pytest
-        entry: bash -c 'pip install pytest-asyncio asyncpg greenlet -e . && python -m pytest'
+        entry: poetry run pytest
         language: system
         pass_filenames: false
         always_run: true

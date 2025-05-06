@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-05-06
+### Added
+- Automated damages worksheet generation (Excel & PDF) triggered by new medical bills.
+- `build_damages_worksheet` Celery task to query bills, calculate totals, generate reports (pandas, WeasyPrint), upload to storage, and update DB.
+- `process_medical_bill` Celery task to handle incoming bills, record them, and trigger worksheet generation.
+- Added `amount` column to `doc` table with Alembic migration for storing bill totals.
+- Fallback logic to parse bill amount from filename if DB amount is missing.
+- New dependencies: `pandas`, `xlsxwriter`, `weasyprint`.
+- Unit tests for damages worksheet builder with mocked dependencies.
+- Updated documentation (README, FLOWS.md) for the new feature.
+
 ## [1.3.0] - 2025-05-06
 ### Added
 - Nightly medical-records request fax automation

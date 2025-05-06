@@ -91,33 +91,52 @@ poetry run uvicorn pi_auto_api.main:app --reload
 
 ### Nightly Medical-Records Request
 
-The system automatically generates and faxes HIPAA-compliant medical record requests to healthcare providers nightly at 2:00 AM ET.
+The system automatically generates and faxes HIPAA-compliant medical records requests to outstanding healthcare providers every night at 2:00 AM Eastern Time.
 
-```
-┌───────────┐     ┌──────────────┐     ┌──────────────────┐     ┌───────────┐     ┌─────────────┐
-│           │     │              │     │                  │     │           │     │             │
-│ Celery    │────▶│ Query for    │────▶│ Generate Medical │────▶│ Upload to │────▶│ Send Fax    │
-│ Beat      │     │ Providers    │     │ Records Request  │     │ Storage   │     │ via Twilio  │
-│ (2:00 AM) │     │ Needing      │     │ Letter PDF      │     │           │     │             │
-│           │     │ Records      │     │                  │     │           │     │             │
-└───────────┘     └──────────────┘     └──────────────────┘     └───────────┘     └──────┬──────┘
-                                                                                         │
-                                                                                         ▼
-                                    ┌───────────────────┐                        ┌──────────────┐
-                                    │                   │                        │              │
-                                    │ Provider Sends    │◀───────────────────────│ Log Request  │
-                                    │ Medical Records   │                        │ in Database  │
-                                    │                   │                        │              │
-                                    └───────────────────┘                        └──────────────┘
+```mermaid
+sequenceDiagram
+    participant CB as Celery Beat
+    participant Worker as Celery Worker
+    participant DB as Supabase
+    participant DA as Docassemble
+    participant Storage as Supabase Storage
+    participant TW as Twilio
+    participant Provider
+
+    Note over CB: 2:00 AM ET Daily
+    CB->>Worker: Trigger send_medical_record_requests task
+    Worker->>DB: Query for providers needing records
+
+    loop For each pending provider
+        Worker->>DB: Get provider payload data
+        Worker->>DA: Generate medical records request letter
+        DA-->>Worker: Return PDF bytes
+        Worker->>Storage: Upload PDF, get signed URL
+        Storage-->>Worker: Return signed URL
+        Worker->>TW: Queue fax with signed URL
+        TW-->>Worker: Return fax SID
+        Worker->>DB: Insert 'records_request_sent' doc row (URL, SID)
+    end
+
+    Worker-->>CB: Task complete
 ```
 
-The process flow:
-1. Celery Beat triggers the task at 2:00 AM ET every day
-2. The task queries the database for providers who haven't sent records yet
-3. For each provider, a HIPAA-compliant request letter is generated via Docassemble
-4. The letter is uploaded to Supabase Storage with a 24-hour signed URL
-5. The letter is faxed to the provider using Twilio's fax service
-6. The system logs each request in the database for tracking
+### Damages Worksheet Generation
+
+When a new medical bill document is added to the system (e.g., via the `process_medical_bill` task), a task is queued to automatically generate and update a damages worksheet for the associated incident. This worksheet is created in both Excel (.xlsx) and PDF formats.
+
+1.  **Trigger**: The `process_medical_bill` task, after successfully adding a `medical_bill` document row to the database, queues the `build_damages_worksheet` task for the relevant `incident_id`.
+2.  **Data Aggregation**: The `build_damages_worksheet` task queries all `medical_bill` document rows for the specified incident.
+3.  **Calculation**: It sums the `amount` listed for each bill. If the `amount` is missing in the database, it attempts a fallback to parse the amount from the document's URL/filename (this parsing is currently basic).
+4.  **Report Generation**: Using the aggregated data, it generates:
+    *   An **Excel file** (.xlsx) listing each provider, bill date, and amount, along with the total damages, using `pandas` and `xlsxwriter`.
+    *   A **PDF file** with similar information, styled for readability using `pandas` HTML export and `WeasyPrint`.
+5.  **Storage**: Both the Excel and PDF files are uploaded to the Supabase storage bucket.
+6.  **Database Update**: Two new document rows are inserted into the `doc` table for the incident:
+    *   One with `type = 'damages_worksheet_excel'` and the URL of the uploaded Excel file.
+    *   One with `type = 'damages_worksheet_pdf'` and the URL of the uploaded PDF file.
+
+*(Placeholder for a screenshot of the generated damages worksheet)*
 
 ## Development
 
