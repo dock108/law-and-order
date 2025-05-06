@@ -1,6 +1,16 @@
 """SQLAlchemy models for the database schema."""
 
-from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, String, Text, func
+from sqlalchemy import (
+    NUMERIC,
+    Boolean,
+    Column,
+    Date,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSON, TIMESTAMP
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -42,6 +52,16 @@ class Incident(Base):
     vehicle_damage_text = Column(Text, nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
 
+    # Settlement and disbursement related fields
+    settlement_amount = Column(NUMERIC(precision=10, scale=2), nullable=True)
+    attorney_fee_pct = Column(
+        NUMERIC(precision=5, scale=2), nullable=False, server_default="33.33"
+    )
+    lien_total = Column(
+        NUMERIC(precision=10, scale=2), nullable=False, server_default="0"
+    )
+    disbursement_status = Column(String(50), nullable=False, server_default="pending")
+
     # Relationships
     client = relationship("Client", back_populates="incidents")
     insurances = relationship(
@@ -53,6 +73,9 @@ class Incident(Base):
     docs = relationship("Doc", back_populates="incident", cascade="all, delete-orphan")
     tasks = relationship(
         "Task", back_populates="incident", cascade="all, delete-orphan"
+    )
+    fee_adjustments = relationship(
+        "FeeAdjustment", back_populates="incident", cascade="all, delete-orphan"
     )
 
 
@@ -128,3 +151,20 @@ class Task(Base):
 
     # Relationships
     incident = relationship("Incident", back_populates="tasks")
+
+
+class FeeAdjustment(Base):
+    """Model representing fee adjustments for a settlement."""
+
+    __tablename__ = "fee_adjustments"
+
+    id = Column(Integer, primary_key=True)
+    incident_id = Column(
+        Integer, ForeignKey("incident.id", ondelete="CASCADE"), nullable=False
+    )
+    description = Column(String(255), nullable=False)
+    amount = Column(NUMERIC(precision=10, scale=2), nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
+
+    # Relationships
+    incident = relationship("Incident", back_populates="fee_adjustments")

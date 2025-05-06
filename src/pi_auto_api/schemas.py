@@ -5,6 +5,7 @@ This module contains Pydantic models for request and response schemas.
 
 import re
 from datetime import date
+from decimal import Decimal
 from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, Field, HttpUrl, field_validator
@@ -109,3 +110,36 @@ class DocuSignWebhookPayload(BaseModel):
 
         # Allow extra fields in the payload that we don't need
         extra = "allow"
+
+
+# Settlement finalization models
+class FeeAdjustment(BaseModel):
+    """Model for fee adjustments in the settlement finalization."""
+
+    description: str = Field(..., description="Description of the fee adjustment")
+    amount: Decimal = Field(
+        ..., description="Amount of the adjustment (positive for deductions)"
+    )
+
+
+class FinalizeSettlementPayload(BaseModel):
+    """Request payload for finalizing a settlement.
+
+    This is used to update an incident with settlement information
+    and queue the disbursement sheet generation.
+    """
+
+    incident_id: int = Field(..., description="ID of the incident being settled")
+    settlement_amount: Decimal = Field(..., description="Gross settlement amount")
+    lien_total: Decimal = Field(0, description="Total liens on the settlement")
+    adjustments: Optional[List[FeeAdjustment]] = Field(
+        default=None, description="Custom fee adjustments/deductions"
+    )
+
+    @field_validator("settlement_amount", "lien_total")
+    @classmethod
+    def validate_amount(cls, v: Decimal) -> Decimal:
+        """Validate that amounts are positive."""
+        if v < 0:
+            raise ValueError("Amount must be non-negative")
+        return v

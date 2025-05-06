@@ -6,7 +6,7 @@ This module contains the FastAPI application instance and route definitions.
 import logging
 import uuid
 from contextlib import asynccontextmanager
-from typing import Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 import asyncpg
 import httpx
@@ -16,7 +16,13 @@ from fastapi.responses import JSONResponse
 
 from pi_auto_api.config import settings
 from pi_auto_api.db import create_intake
-from pi_auto_api.schemas import DocuSignWebhookPayload, IntakePayload, IntakeResponse
+from pi_auto_api.schemas import (
+    DocuSignWebhookPayload,
+    FinalizeSettlementPayload,
+    IntakePayload,
+    IntakeResponse,
+)
+from pi_auto_api.tasks.disbursement import generate_disbursement_sheet
 from pi_auto_api.tasks.insurance_notice import send_insurance_notice
 from pi_auto_api.tasks.retainer import generate_retainer
 
@@ -289,6 +295,110 @@ async def intake(payload: IntakePayload) -> IntakeResponse:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create intake. Please try again later.",
+        ) from e
+
+
+# Settlement finalization endpoint
+@app.post(
+    "/internal/finalize_settlement",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Finalize settlement and generate disbursement sheet",
+)
+async def finalize_settlement(
+    payload: FinalizeSettlementPayload,
+    request: Request,
+    # Uncomment for production with auth
+    # user: str = Depends(get_current_user),
+    # Only allow lawyers and paralegals
+    # role: str = Depends(verify_role(["lawyer", "paralegal"])),
+) -> Dict[str, Any]:
+    """Finalize a settlement and generate a disbursement sheet.
+
+    This endpoint updates settlement details for an incident and queues
+    a task to generate and send a disbursement sheet for signature.
+
+    Args:
+        payload: The settlement details including incident_id, settlement_amount,
+                lien_total, and adjustments.
+        request: The request object.
+
+    Returns:
+        Status information and task ID.
+
+    Raises:
+        HTTPException: If there's an error updating the settlement details.
+    """
+    try:
+        conn = None
+        try:
+            # Connect to the database
+            conn = await asyncpg.connect(settings.SUPABASE_URL)
+
+            # 1. Update incident with settlement details
+            update_query = """
+            UPDATE incident
+            SET settlement_amount = $1,
+                lien_total = $2
+            WHERE id = $3
+            RETURNING id
+            """
+            incident_id = await conn.fetchval(
+                update_query,
+                payload.settlement_amount,
+                payload.lien_total,
+                payload.incident_id,
+            )
+
+            if not incident_id:
+                raise ValueError(f"Incident {payload.incident_id} not found")
+
+            # 2. Insert fee adjustments if any
+            if payload.adjustments:
+                for adjustment in payload.adjustments:
+                    insert_query = """
+                    INSERT INTO fee_adjustments (incident_id, description, amount)
+                    VALUES ($1, $2, $3)
+                    """
+                    await conn.execute(
+                        insert_query,
+                        payload.incident_id,
+                        adjustment.description,
+                        adjustment.amount,
+                    )
+
+            logger.info(f"Settlement finalized for incident {payload.incident_id}")
+
+        finally:
+            if conn:
+                await conn.close()
+
+        # 3. Queue task to generate disbursement sheet
+        task = generate_disbursement_sheet.delay(payload.incident_id)
+        logger.info(
+            f"Queued disbursement sheet task {task.id} "
+            f"for incident {payload.incident_id}"
+        )
+
+        return {
+            "status": "success",
+            "message": "Settlement finalized and disbursement sheet generation queued",
+            "incident_id": payload.incident_id,
+            "task_id": task.id,
+        }
+
+    except ValueError as e:
+        # Handle validation errors
+        logger.error(f"Validation error in settlement finalization: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        ) from e
+    except Exception as e:
+        # Handle database errors
+        logger.error(f"Error finalizing settlement: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to finalize settlement. Please try again later.",
         ) from e
 
 

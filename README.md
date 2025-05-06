@@ -191,6 +191,65 @@ The system automatically assembles demand packages when all required documents f
    - Medical records
    - Medical bills
 
+### Disbursement Sheet Generator & E-Sign
+
+After a settlement is finalized, the system automatically calculates fee and lien splits, generates a disbursement sheet, and sends it to the client for signature through DocuSign.
+
+1. **Settlement Finalization Process**:
+   ```mermaid
+   sequenceDiagram
+       participant API as API Endpoint
+       participant DB as Supabase
+       participant Worker as Celery Worker
+       participant DA as Docassemble
+       participant DS as DocuSign
+       participant Client
+
+       API->>DB: Update incident settlement data
+       API->>DB: Store fee adjustments (if any)
+       API->>Worker: Queue generate_disbursement_sheet task
+       Worker->>DB: Fetch incident and client details
+       Worker->>Worker: Calculate settlement split
+       Worker->>DA: Generate disbursement sheet PDF
+       DA-->>Worker: Return PDF bytes
+       Worker->>DS: Send PDF for e-signature
+       DS-->>Worker: Return envelope ID
+       Worker->>DB: Update disbursement_status to 'sent'
+       Worker->>DB: Insert 'disbursement_sheet' doc row
+       DS->>Client: Send e-signature request
+       Client->>DS: Sign document
+       DS->>API: Webhook notification (signed)
+       API->>DB: Update disbursement_status to 'signed'
+   ```
+
+2. **Calculation Logic**: The disbursement calculator computes the settlement split:
+   - Gross settlement amount
+   - Attorney fee (based on percentage)
+   - Medical liens
+   - Other adjustments/deductions
+   - Net amount to client
+
+3. **Settlement Finalization Endpoint**:
+   ```bash
+   curl -X POST http://localhost:8000/internal/finalize_settlement \
+     -H "Content-Type: application/json" \
+     -d '{
+       "incident_id": 123,
+       "settlement_amount": 60000,
+       "lien_total": 5000,
+       "adjustments": [
+         {"description": "Filing fee", "amount": 500},
+         {"description": "Expert witness", "amount": 1000}
+       ]
+     }'
+   ```
+
+4. **Disbursement Sheet Example**:
+   - Clearly shows all components of the settlement
+   - Includes signature blocks for client and attorney
+   - Sent via DocuSign for secure e-signature
+   - Status tracked in the database (`pending`, `sent`, `signed`)
+
 ## Development
 
 ### Pre-commit Hooks

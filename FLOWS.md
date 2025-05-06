@@ -58,3 +58,72 @@ sequenceDiagram
 ```
 
 ## Document Processing (Medical Bill Example)
+
+## Settlement and Disbursement Flow
+
+This flow describes the process of finalizing a settlement, automatically calculating the disbursement amounts, generating a disbursement sheet, and sending it to the client for e-signature.
+
+1. **Trigger**: A settlement offer is accepted and the case handler calls the `/internal/finalize_settlement` API endpoint with settlement details.
+2. **Settlement Data Storage**:
+   * Update the `incident` record with `settlement_amount`, `lien_total`, and set `disbursement_status = 'pending'`.
+   * Create `fee_adjustments` records for any custom deductions or credits.
+3. **Task Queuing**: The API endpoint queues the `generate_disbursement_sheet` Celery task for the incident.
+4. **Disbursement Sheet Generation** (`generate_disbursement_sheet` task):
+   * **Fetch Data**: Retrieve incident and client details from the database.
+   * **Calculate Split**: Call `utils.disbursement_calc.calc_split()` to compute the settlement division:
+     - Gross settlement amount
+     - Attorney fee (based on attorney_fee_pct)
+     - Lien total
+     - Other adjustments (sum of fee_adjustments.amount)
+     - Net to client (gross minus deductions)
+   * **Generate PDF**: Call Docassemble via `externals.docassemble.generate_letter('disbursement', payload)` to create the disbursement sheet PDF.
+   * **Send for Signature**: Send the PDF to DocuSign via `externals.docusign.send_envelope()` for client e-signature.
+   * **Update Status**: Set `incident.disbursement_status = 'sent'`.
+   * **Record Document**: Create a new `doc` record with `type = 'disbursement_sheet'` and the DocuSign envelope ID.
+5. **E-Signature Process**:
+   * Client receives an email with a link to sign the disbursement sheet.
+   * Client reviews and signs the document.
+   * DocuSign sends a webhook notification to the API when signed.
+6. **Post-Signature Actions**:
+   * Update `incident.disbursement_status = 'signed'`.
+   * Update the document status.
+   * Potentially trigger funds release process (future feature).
+
+```mermaid
+sequenceDiagram
+    participant Case as Case Handler
+    participant API as API Endpoint
+    participant DB as Database
+    participant Task as generate_disbursement_sheet()
+    participant Calc as calc_split()
+    participant DA as Docassemble
+    participant DS as DocuSign
+    participant Client
+
+    Case->>API: POST /internal/finalize_settlement
+    API->>DB: Update incident settlement data
+    API->>DB: Create fee_adjustments records
+    API->>Task: Queue task(incident_id)
+
+    Task->>DB: Fetch incident & client details
+    Task->>Calc: Calculate split(incident_id)
+    Calc->>DB: Query settlement data & adjustments
+    Calc-->>Task: Return split calculations
+
+    Task->>DA: generate_letter('disbursement', payload)
+    DA-->>Task: Return disbursement_sheet.pdf
+
+    Task->>DS: send_envelope(pdf, client_email, client_name)
+    DS-->>Task: Return envelope_id
+
+    Task->>DB: Update incident.disbursement_status = 'sent'
+    Task->>DB: Insert doc record (type='disbursement_sheet')
+
+    DS->>Client: Send signing request email
+    Client->>DS: Sign document
+    DS->>API: Webhook notification (signed)
+    API->>DB: Update incident.disbursement_status = 'signed'
+    API->>DB: Update doc.status = 'signed'
+```
+
+This flow extends the case management timeline from settlement to disbursement sheet and creates the foundation for the funds release process.

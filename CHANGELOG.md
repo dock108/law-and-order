@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - YYYY-MM-DD
+
+### Added
+- **Automated Disbursement Sheet Generator & E-Sign**
+  - Added database migration to extend incident table with settlement columns (settlement_amount, attorney_fee_pct, lien_total, disbursement_status).
+  - Created new fee_adjustments table for tracking custom deductions/credits.
+  - Implemented disbursement_calc.py utility for calculating settlement splits.
+  - Added disbursement.py Celery task for generating and sending disbursement sheets.
+  - Created /internal/finalize_settlement endpoint to update settlement data and queue the disbursement task.
+  - Added disbursement_sheet.md Docassemble template for the disbursement statement.
+  - Implemented DocuSign integration for secure e-signature of disbursement sheets.
+  - Added comprehensive unit tests for calculation logic and disbursement generation.
+  - Updated README.md and FLOWS.md with detailed workflow documentation.
+
+## [1.6.0] - YYYY-MM-DD
+
+### Added
+- **Automated Demand Package Assembly**
+  - Added `pikepdf` dependency for PDF manipulation.
+  - Created demand package assembly system: `utils/package_rules.py`, `tasks/demand.py`, `utils/pdf_merge.py`.
+  - Implemented PDF merging utility `utils.pdf_merge.merge_pdfs` for combining documents.
+  - Added `is_demand_ready` function to check if an incident has all required documents for demand package creation.
+  - Implemented `assemble_demand_package` Celery task to build demand packages from medical records, bills, damages worksheet, and liability photos.
+  - Added `check_and_build_demand` nightly task that runs at 3 AM to find eligible incidents and create demand packages.
+  - Added comprehensive unit tests for PDF merging and demand package assembly.
+  - Updated documentation with demand package assembly workflow.
+
 ## [1.5.0] - YYYY-MM-DD
 
 ### Added
