@@ -1,7 +1,7 @@
 """PI Workflow API router defining stub endpoints."""
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse
 
 # Import the authentication dependency
 from pi_auto_api.auth import get_current_staff
@@ -67,9 +67,3 @@ async def list_documents():
 async def send_document(docId: str):
     """Stub route for sending a document."""
     return JSONResponse(status_code=501, content={"detail": "Not implemented"})
-
-
-@router.get("/events/stream")
-async def get_event_stream():
-    """Stub route for the SSE event stream."""
-    return PlainTextResponse("", status_code=501)

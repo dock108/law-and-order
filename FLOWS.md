@@ -127,3 +127,39 @@ sequenceDiagram
 ```
 
 This flow extends the case management timeline from settlement to disbursement sheet and creates the foundation for the funds release process.
+
+## Live Activity Event Flow (SSE)
+
+This flow illustrates how events are published by various parts of the application (e.g., Celery tasks, API routes) and streamed to connected clients via Server-Sent Events (SSE).
+
+1.  **Event Trigger**: An action occurs in the system that should be broadcast to clients (e.g., a Celery task like `generate_disbursement_sheet` completes, a document status changes via an API call).
+2.  **Publish to Redis**: The component responsible for the action calls `await record_event(event_payload_dict)` from `src/pi_auto_api/events.py`.
+3.  **Redis Pub/Sub**: The `record_event` function serializes the event dictionary to JSON and publishes it to a specific Redis channel (currently `activity`).
+4.  **SSE Endpoint Subscription**: When a client connects to `/api/events/stream`, the `event_publisher` in `src/pi_auto_api/routers/sse.py` establishes a connection to Redis and subscribes to the `activity` channel.
+5.  **Event Streaming**: As messages are published to the Redis channel, the `event_publisher` receives them.
+6.  **Formatting & Yielding**: Each received message is formatted into the SSE protocol (`id:<timestamp>\ndata:<json_payload>\n\n`) and yielded to the `EventSourceResponse`.
+7.  **Client Reception**: The connected client (e.g., a browser using `EventSource`) receives these events in real-time.
+8.  **Heartbeat**: The SSE endpoint also sends a periodic keep-alive comment (`: keep-alive\n\n`) to prevent client-side and proxy timeouts.
+
+```mermaid
+sequenceDiagram
+    participant AppLogic as Application Logic (Task/Route)
+    participant EventHelper as events.record_event()
+    participant RedisPubSub as Redis (Pub/Sub: activity channel)
+    participant SSEEndpoint as /api/events/stream (sse.py)
+    participant Client as UI Client (EventSource)
+
+    Client->>SSEEndpoint: GET /api/events/stream (connects)
+    SSEEndpoint->>RedisPubSub: SUBSCRIBE to 'activity' channel
+
+    AppLogic->>EventHelper: Call record_event({"type":"some_event", ...})
+    EventHelper->>RedisPubSub: PUBLISH JSON to 'activity' channel
+
+    RedisPubSub-->>SSEEndpoint: Receives message from 'activity'
+    SSEEndpoint->>SSEEndpoint: Format message (id, data)
+    SSEEndpoint-->>Client: Stream formatted event
+
+    loop Every 30 seconds
+        SSEEndpoint-->>Client: Stream keep-alive comment
+    end
+```

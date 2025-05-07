@@ -191,6 +191,63 @@ curl -X GET http://localhost:8000/api/cases \
 
 If the token is missing, expired, or invalid, the API will respond with a `401 Unauthorized` error.
 
+### Live Activity Feed
+
+The API provides a Server-Sent Events (SSE) stream at `/api/events/stream` to receive live updates about activities within the system, such as task completions or document status changes. Clients can subscribe to this stream to provide real-time feedback in a user interface.
+
+**Subscribing to the Event Stream (Browser Example):**
+
+```javascript
+const eventSource = new EventSource('http://localhost:8000/api/events/stream'); // Replace with your API URL
+
+eventSource.onopen = function () {
+  console.log('Connection to SSE stream opened.');
+};
+
+eventSource.onmessage = function (event) {
+  console.log('New event received:');
+  console.log('  ID:', event.lastEventId); // The ID is a millisecond timestamp
+  try {
+    const eventData = JSON.parse(event.data);
+    console.log('  Data:', eventData);
+    // Process the eventData object (e.g., update UI)
+    // Example: if (eventData.type === 'disbursement_sent') { ... }
+  } catch (e) {
+    console.error('Error parsing event data:', e);
+  }
+};
+
+// Optional: Handle custom named events if the server sends them
+// eventSource.addEventListener('custom_event_name', function(event) {
+//   console.log("Custom event:", event.data);
+// });
+
+eventSource.onerror = function (err) {
+  if (eventSource.readyState === EventSource.CLOSED) {
+    console.log('Connection to SSE stream closed.');
+  }
+  console.error('Error with SSE stream:', err);
+  // Optionally, attempt to reconnect here
+};
+
+// To close the connection from the client side:
+// eventSource.close();
+```
+
+**Event Format:**
+
+Events are streamed in the following format:
+
+```
+id:<timestamp_ms>
+data:{"type":"event_type","key":"value",...}
+
+```
+
+A keep-alive comment (`: keep-alive`) is sent every 30 seconds to prevent connection timeouts.
+
+The `Last-Event-ID` header can be sent by the client on reconnect to request events since the last received ID, though this is currently ignored by the server (v1).
+
 ```mermaid
 sequenceDiagram
     participant CB as Celery Beat

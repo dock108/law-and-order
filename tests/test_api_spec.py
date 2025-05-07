@@ -60,16 +60,6 @@ async def test_stub_routes_return_501_with_auth(
     assert response.json() == {"detail": "Not implemented"}
 
 
-# Test for SSE route (assuming it remains unprotected for now)
-@pytest.mark.asyncio
-async def test_sse_event_stream_returns_501(async_client: AsyncClient):
-    """Test that the SSE event stream stub route returns 501 Not Implemented."""
-    method, path = SSE_ROUTE
-    response = await async_client.request(method, path)
-    assert response.status_code == 501
-    assert response.text == ""
-
-
 def test_openapi_spec_is_valid():
     """Test that the openapi/pi-workflow.yaml spec is valid OpenAPI."""
     spec_path = Path("openapi/pi-workflow.yaml")

@@ -8,6 +8,7 @@ import asyncpg
 
 from pi_auto_api.celery_app import app
 from pi_auto_api.config import settings
+from pi_auto_api.events import record_event
 from pi_auto_api.externals.docassemble import generate_letter
 from pi_auto_api.externals.docusign import send_envelope
 from pi_auto_api.utils.disbursement_calc import calc_split
@@ -123,6 +124,17 @@ async def generate_disbursement_sheet(incident_id: int) -> Optional[str]:
             f"Disbursement sheet generated and sent for incident {incident_id}, "
             f"envelope_id: {envelope_id}, doc_id: {doc_id}"
         )
+
+        # Record event after successful generation and sending
+        await record_event(
+            {
+                "type": "disbursement_sent",
+                "incident_id": incident_id,
+                "envelope_id": envelope_id,
+                "doc_id": doc_id,
+            }
+        )
+
         return envelope_id
 
     except Exception as e:
