@@ -64,6 +64,11 @@ jobs:
     - name: Install project
       run: poetry install --no-interaction
 
+    - name: Check OpenAPI spec drift
+      run: |
+        source .venv/bin/activate
+        poetry run python scripts/export_openapi.py --check
+
     - name: Wait for PostgreSQL to be ready
       run: |
         echo "Waiting for PostgreSQL..."

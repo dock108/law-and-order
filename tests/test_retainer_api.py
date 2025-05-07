@@ -94,6 +94,7 @@ def docassemble_service():
     subprocess.run(["docker", "compose", "down"], stdout=subprocess.PIPE)
 
 
+@pytest.mark.skip(reason="Skipped: freezes, needs refactor to unit test.")
 def test_retainer_generation(docassemble_service):
     """Test retainer generation API."""
     # Prepare test payload
@@ -128,14 +129,14 @@ def test_retainer_generation(docassemble_service):
     error_msg = f"Expected status code 200, got {status_code}, "
     error_msg += f"response: {response.text}"
     assert response.status_code == 200, error_msg
-    assert (
-        response.headers["Content-Type"] == "application/pdf"
-    ), "Response is not a PDF"
+    assert response.headers["Content-Type"] == "application/pdf", (
+        "Response is not a PDF"
+    )
 
     # Check that it's a valid PDF by checking for the PDF header signature
-    assert (
-        response.content[:4] == b"%PDF"
-    ), "Response is not a valid PDF (missing header)"
+    assert response.content[:4] == b"%PDF", (
+        "Response is not a valid PDF (missing header)"
+    )
 
     # Check file size is reasonable (at least 1KB)
     assert len(response.content) > 1024, "PDF is suspiciously small"

@@ -1,0 +1,554 @@
+openapi: 3.1.0
+info:
+  title: PI Automation API
+  description: API for automating personal injury case management workflows
+  version: 0.1.0
+paths:
+  /api/cases:
+    get:
+      tags:
+      - pi-workflow
+      summary: List Cases
+      operationId: list_cases_api_cases_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/cases/{caseId}:
+    get:
+      tags:
+      - pi-workflow
+      summary: Get Case Detail
+      operationId: get_case_detail_api_cases__caseId__get
+      parameters:
+      - name: caseId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Caseid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/cases/{caseId}/advance:
+    post:
+      tags:
+      - pi-workflow
+      summary: Advance Case Stage
+      operationId: advance_case_stage_api_cases__caseId__advance_post
+      parameters:
+      - name: caseId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Caseid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/tasks:
+    get:
+      tags:
+      - pi-workflow
+      summary: List Tasks
+      operationId: list_tasks_api_tasks_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+    post:
+      tags:
+      - pi-workflow
+      summary: Create Task
+      operationId: create_task_api_tasks_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/tasks/{taskId}:
+    patch:
+      tags:
+      - pi-workflow
+      summary: Update Task
+      operationId: update_task_api_tasks__taskId__patch
+      parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Taskid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - pi-workflow
+      summary: Delete Task
+      operationId: delete_task_api_tasks__taskId__delete
+      parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Taskid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/tasks/bulk-complete:
+    post:
+      tags:
+      - pi-workflow
+      summary: Mark Many Tasks Done
+      operationId: mark_many_tasks_done_api_tasks_bulk_complete_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/documents:
+    get:
+      tags:
+      - pi-workflow
+      summary: List Documents
+      operationId: list_documents_api_documents_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/documents/{docId}/send:
+    post:
+      tags:
+      - pi-workflow
+      summary: Send Document
+      operationId: send_document_api_documents__docId__send_post
+      parameters:
+      - name: docId
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Docid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/events/stream:
+    get:
+      tags:
+      - pi-workflow
+      summary: Get Event Stream
+      operationId: get_event_stream_api_events_stream_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /healthz:
+    get:
+      summary: Health check endpoint
+      description: "Simple health check endpoint.\n\nReturns:\n    Dictionary with\
+        \ status \"ok\"."
+      operationId: health_check_healthz_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Health Check Healthz Get
+  /readyz:
+    get:
+      summary: Readiness check endpoint
+      description: "Check if the application is ready to serve requests.\n\nThis endpoint\
+        \ checks if the database and Docassemble API are available.\n\nArgs:\n   \
+        \ db: Result of database check dependency.\n    docassemble: Result of Docassemble\
+        \ API check dependency.\n\nReturns:\n    Dictionary with status \"ok\" if\
+        \ all systems are ready."
+      operationId: readiness_check_readyz_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Readiness Check Readyz Get
+  /intake:
+    post:
+      summary: Create new client intake
+      description: "Create a new client intake record.\n\nThis endpoint creates a\
+        \ new client and incident record in the database,\nand queues a task to generate\
+        \ a retainer agreement.\n\nArgs:\n    payload: The intake payload containing\
+        \ client and incident data\n\nReturns:\n    A response containing the created\
+        \ client_id and incident_id\n\nRaises:\n    HTTPException: If there's an error\
+        \ creating the records"
+      operationId: intake_intake_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntakePayload'
+        required: true
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntakeResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/finalize_settlement:
+    post:
+      summary: Finalize settlement and generate disbursement sheet
+      description: "Finalize a settlement and generate a disbursement sheet.\n\nThis\
+        \ endpoint updates settlement details for an incident and queues\na task to\
+        \ generate and send a disbursement sheet for signature.\n\nArgs:\n    payload:\
+        \ The settlement details including incident_id, settlement_amount,\n     \
+        \       lien_total, and adjustments.\n    request: The request object.\n\n\
+        Returns:\n    Status information and task ID.\n\nRaises:\n    HTTPException:\
+        \ If there's an error updating the settlement details."
+      operationId: finalize_settlement_internal_finalize_settlement_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinalizeSettlementPayload'
+        required: true
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Finalize Settlement Internal Finalize Settlement Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /webhooks/docusign:
+    post:
+      summary: DocuSign Connect webhook endpoint
+      description: "Process DocuSign webhook for completed envelopes.\n\nThis endpoint\
+        \ receives notifications from DocuSign when a document\nhas been signed. When\
+        \ a retainer agreement is signed, it triggers\nthe insurance notice flow to\
+        \ send LORs to insurance carriers.\n\nArgs:\n    payload: The DocuSign webhook\
+        \ payload\n\nReturns:\n    Acknowledgment of receipt"
+      operationId: docusign_webhook_webhooks_docusign_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocuSignWebhookPayload'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Docusign Webhook Webhooks Docusign Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ClientIn:
+      properties:
+        full_name:
+          type: string
+          title: Full Name
+        dob:
+          type: string
+          format: date
+          title: Dob
+        phone:
+          type: string
+          title: Phone
+          description: 'Client phone number in format: XXX-XXX-XXXX or (XXX) XXX-XXXX'
+        email:
+          type: string
+          format: email
+          title: Email
+        address:
+          type: string
+          title: Address
+      type: object
+      required:
+      - full_name
+      - dob
+      - phone
+      - email
+      - address
+      title: ClientIn
+      description: Schema for client data in an intake request.
+    DocuSignCustomField:
+      properties:
+        name:
+          type: string
+          title: Name
+        value:
+          type: string
+          title: Value
+      type: object
+      required:
+      - name
+      - value
+      title: DocuSignCustomField
+      description: Model for DocuSign envelope custom fields.
+    DocuSignWebhookPayload:
+      properties:
+        envelopeId:
+          type: string
+          title: Envelopeid
+        status:
+          type: string
+          title: Status
+        emailSubject:
+          type: string
+          title: Emailsubject
+          default: Retainer Agreement
+        customFields:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/DocuSignCustomField'
+            type: array
+          - type: 'null'
+          title: Customfields
+      additionalProperties: true
+      type: object
+      required:
+      - envelopeId
+      - status
+      title: DocuSignWebhookPayload
+      description: 'Model for DocuSign Connect webhook payload.
+
+
+        This is a simplified version of the actual payload,
+
+        containing only the fields we need for our application.'
+    FeeAdjustment:
+      properties:
+        description:
+          type: string
+          title: Description
+          description: Description of the fee adjustment
+        amount:
+          anyOf:
+          - type: number
+          - type: string
+          title: Amount
+          description: Amount of the adjustment (positive for deductions)
+      type: object
+      required:
+      - description
+      - amount
+      title: FeeAdjustment
+      description: Model for fee adjustments in the settlement finalization.
+    FinalizeSettlementPayload:
+      properties:
+        incident_id:
+          type: integer
+          title: Incident Id
+          description: ID of the incident being settled
+        settlement_amount:
+          anyOf:
+          - type: number
+          - type: string
+          title: Settlement Amount
+          description: Gross settlement amount
+        lien_total:
+          anyOf:
+          - type: number
+          - type: string
+          title: Lien Total
+          description: Total liens on the settlement
+          default: 0
+        adjustments:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/FeeAdjustment'
+            type: array
+          - type: 'null'
+          title: Adjustments
+          description: Custom fee adjustments/deductions
+      type: object
+      required:
+      - incident_id
+      - settlement_amount
+      title: FinalizeSettlementPayload
+      description: 'Request payload for finalizing a settlement.
+
+
+        This is used to update an incident with settlement information
+
+        and queue the disbursement sheet generation.'
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    IncidentIn:
+      properties:
+        date:
+          type: string
+          format: date
+          title: Date
+        location:
+          type: string
+          title: Location
+        police_report_url:
+          anyOf:
+          - type: string
+            maxLength: 2083
+            minLength: 1
+            format: uri
+          - type: 'null'
+          title: Police Report Url
+        injuries:
+          items:
+            type: string
+          type: array
+          title: Injuries
+          default: []
+        vehicle_damage_text:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Vehicle Damage Text
+      type: object
+      required:
+      - date
+      - location
+      title: IncidentIn
+      description: Schema for incident data in an intake request.
+    IntakePayload:
+      properties:
+        client:
+          $ref: '#/components/schemas/ClientIn'
+        incident:
+          $ref: '#/components/schemas/IncidentIn'
+      type: object
+      required:
+      - client
+      - incident
+      title: IntakePayload
+      description: Schema for the complete intake request payload.
+    IntakeResponse:
+      properties:
+        client_id:
+          type: integer
+          title: Client Id
+        incident_id:
+          type: integer
+          title: Incident Id
+        status:
+          type: string
+          title: Status
+          default: processing
+      type: object
+      required:
+      - client_id
+      - incident_id
+      title: IntakeResponse
+      description: Response model for client intake.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

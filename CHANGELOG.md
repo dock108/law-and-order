@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2025-05-07
+
+### Added
+- Initial OpenAPI 3.1 spec (`openapi/pi-workflow.yaml`) defining core resources (Cases, Tasks, Documents, Activity Events) with empty schemas.
+- Stub FastAPI router (`src/pi_auto_api/routers/pi_workflow.py`) for the defined OpenAPI paths, all returning 501 Not Implemented.
+- Mounted the new router in `main.py` under the `/api` prefix.
+- Script `scripts/export_openapi.py` to generate/update the OpenAPI spec from FastAPI app, with a `--check` option for CI.
+- CI step in `ci.yml` to run `export_openapi.py --check` and fail on drift.
+- Unit tests (`tests/test_api_spec.py`) to:
+    - Assert each stub route returns 501.
+    - Validate `openapi/pi-workflow.yaml` using `openapi-schema-validator`.
+- Updated `README.md` with an "API spec" section linking to the YAML and showing a `curl` example.
+
 ## [1.8.0] - YYYY-MM-DD
 
 ### Added

@@ -42,6 +42,16 @@ pytest
 
 ## API
 
+### API spec
+
+The PI Workflow API is defined by an OpenAPI 3.1 specification.
+
+- View the [OpenAPI spec file](openapi/pi-workflow.yaml).
+- You can test the stubbed `/api/cases` endpoint (once the API is running locally) with:
+  ```bash
+  curl http://localhost:9000/api/cases
+  ```
+
 ### Run the API locally
 
 The PI Automation API provides a RESTful interface for managing personal injury cases.
