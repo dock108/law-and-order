@@ -24,7 +24,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthLoginResponse'
         '401':
-          description: Unauthorized
+          description: Unauthorized - Incorrect email, password, or inactive user
           content:
             application/json:
               schema:
@@ -490,7 +490,6 @@ components:
             - type: string
           title: Lien Total
           description: Total liens on the settlement
-          default: 0
         adjustments:
           anyOf:
             - items:

@@ -17,6 +17,7 @@
     "eslint": "^9.26.0",
     "eslint-config-prettier": "^10.1.3",
     "eslint-plugin-prettier": "^5.4.0",
+    "openapi-diff": "^0.23.7",
     "openapi-typescript": "^6.7.5",
     "prettier": "^3.5.3",
     "typescript": "^5.4.5"

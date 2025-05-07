@@ -1,0 +1,157 @@
+name: Contract Tests
+
+on:
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/contract-tests.yml'
+      - 'openapi/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'poetry.lock'
+      - 'pyproject.toml'
+      - 'packages/api-client/**' # SDK changes also relevant
+  pull_request:
+    branches: ['main']
+    paths:
+      - '.github/workflows/contract-tests.yml'
+      - 'openapi/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'poetry.lock'
+      - 'pyproject.toml'
+      - 'packages/api-client/**' # SDK changes also relevant
+
+jobs:
+  api-sdk-contract:
+    runs-on: ubuntu-latest
+    name: API-SDK Contract Verification
+    # This job depends on the backend.yml client-sdk-sync job having run
+    # successfully in a PR context, but GH Actions doesn't directly support
+    # cross-workflow `needs` for PRs triggered by same commit.
+    # We ensure SDK is current by regenerating it here.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11' # Match backend.yml
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-3.11-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Install Python dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
+
+      - name: Install Python project
+        run: poetry install --no-interaction
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Match backend.yml
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8 # Match backend.yml
+
+      - name: Install Node.js dependencies
+        run: pnpm install
+
+      - name: Regenerate API client for consistency
+        run: pnpm run gen:client
+
+      - name: Export OpenAPI spec from running app
+        run: |
+          source .venv/bin/activate
+          poetry run python scripts/export_openapi.py --output openapi/live-app-spec.yml
+        env:
+          # Dummy env vars for app to load enough to export schema
+          SUPABASE_URL: postgresql://user:pass@host:port/db
+          SUPABASE_KEY: dummy-key
+          REDIS_URL: redis://localhost:6379/0
+          # Add other required env vars for your app to initialize for schema export
+
+      - name: Diff committed OpenAPI spec with live app spec
+        run: |
+          npx openapi-diff openapi/pi-workflow.yaml openapi/live-app-spec.yml
+          # Add specific openapi-diff flags if needed, e.g., --fail-on-incompatible
+
+      - name: Run Alembic migrations (for tests)
+        run: |
+          source .venv/bin/activate
+          alembic upgrade head
+        env:
+          SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+          SUPABASE_KEY: dummy-key
+
+      - name: Seed database (if needed by contract tests for existing data)
+        # Only if your /auth/login needs a specific user from seed.sql
+        # Otherwise, tests should create their own data or use mocks.
+        run: |
+          psql -h localhost -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB -a -f seed.sql
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+          PGPASSWORD: testpassword
+
+      - name: Start FastAPI app in background for SDK tests
+        run: |
+          source .venv/bin/activate
+          nohup uvicorn pi_auto_api.main:app --host 0.0.0.0 --port 8000 > api_contract_tests.log 2>&1 &
+          echo "FastAPI started on port 8000 for contract tests"
+          sleep 5 # Give app time to start
+        env:
+          SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+          SUPABASE_KEY: dummy-key
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET: testsecret # Use a fixed secret for tests if needed
+          # Add other necessary env vars for your app to run
+
+      - name: Run Contract Tests (Pytest)
+        run: |
+          source .venv/bin/activate
+          poetry run pytest -m contract tests/contract/
+        env:
+          # Env vars for pytest if they differ or need to be reinforced
+          PYTHONPATH: src
+          TEST_DATABASE_URL: postgresql+asyncpg://testuser:testpassword@localhost:5432/testdb
+          # Ensure SDK invoker can reach the API
+          API_BASE_URL_FOR_SDK_TESTS: http://localhost:8000

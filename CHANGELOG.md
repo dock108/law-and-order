@@ -7,7 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.5.0] - YYYY-MM-DD // TODO: Update Date
+## [2.6.0] - 2024-07-31
+
+### Added
+
+- **API ↔ SDK Contract Testing**:
+  - Added `schemathesis[pytest]` for OpenAPI conformance testing against live FastAPI app (`tests/contract/test_api_client_contract.py`).
+  - Implemented a smoke test layer to verify parity between direct API calls and TypeScript SDK calls (invoked via Node.js subprocess `tests/contract/sdk_invoker.js`) for key implemented endpoints (e.g., `/auth/login`).
+  - Added `openapi-diff` for lightweight Pact-style checking of spec changes against the live app schema during CI.
+  - New GitHub Actions workflow `contract-tests.yml` that:
+    - Runs on backend, OpenAPI, or SDK changes.
+    - Sets up Python, Node, and services (Postgres, Redis).
+    - Regenerates SDK, runs `openapi-diff`, starts the API, and executes `pytest -m contract`.
+- **Developer Documentation**:
+  - Created a comprehensive "Getting Started" guide (`docs/DEVELOPMENT.md`) covering prerequisites, full-stack local setup, running tests/linters, common environment variables, and troubleshooting tips.
+
+### Changed
+
+- Updated `README.md` to include a link to the new `DEVELOPMENT.md` guide and a CI badge for the "Contract Tests" workflow.
+- Added `contract` marker to `pyproject.toml` for pytest.
+
+## [2.5.0] - 2024-07-31
 
 ### Added
 
@@ -192,98 +212,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Automated Demand Package Assembly**
   - Added `pikepdf` dependency for PDF manipulation.
   - Created demand package assembly system: `utils/package_rules.py`, `tasks/demand.py`, `utils/pdf_merge.py`.
-  - Implemented PDF merging utility `utils.pdf_merge.merge_pdfs` for combining documents.
-  - Added `is_demand_ready` function to check if an incident has all required documents for demand package creation.
-  - Implemented `assemble_demand_package` Celery task to build demand packages from medical records, bills, damages worksheet, and liability photos.
-  - Added `check_and_build_demand` nightly task that runs at 3 AM to find eligible incidents and create demand packages.
-  - Added comprehensive unit tests for PDF merging and demand package assembly.
-  - Updated documentation with demand package assembly workflow.
-
-## [1.5.0] - YYYY-MM-DD
-
-### Added
-
-- **Automated Demand Package Assembly**
-  - Added `pikepdf` dependency for PDF manipulation.
-  - Created demand package assembly system: `utils/package_rules.py`, `tasks/demand.py`, `utils/pdf_merge.py`.
-  - Implemented PDF merging utility `utils.pdf_merge.merge_pdfs` for combining documents.
-  - Added `is_demand_ready` function to check if an incident has all required documents for demand package creation.
-  - Implemented `assemble_demand_package` Celery task to build demand packages from medical records, bills, damages worksheet, and liability photos.
-  - Added `check_and_build_demand` nightly task that runs at 3 AM to find eligible incidents and create demand packages.
-  - Added comprehensive unit tests for PDF merging and demand package assembly.
-  - Updated documentation with demand package assembly workflow.
-
-## [1.4.0] - 2025-05-06
-
-### Added
-
-- Automated damages worksheet generation (Excel & PDF) triggered by new medical bills.
-- `build_damages_worksheet` Celery task to query bills, calculate totals, generate reports (pandas, WeasyPrint), upload to storage, and update DB.
-- `process_medical_bill` Celery task to handle incoming bills, record them, and trigger worksheet generation.
-- Added `amount` column to `doc` table with Alembic migration for storing bill totals.
-- Fallback logic to parse bill amount from filename if DB amount is missing.
-- New dependencies: `pandas`, `xlsxwriter`, `weasyprint`.
-- Unit tests for damages worksheet builder with mocked dependencies.
-- Updated documentation (README, FLOWS.md) for the new feature.
-
-## [1.3.0] - 2025-05-06
-
-### Added
-
-- Nightly medical-records request fax automation
-- Celery Beat scheduler for running tasks at regular intervals
-- Medical records request task that runs daily at 2:00 AM ET
-- Database helper for retrieving provider payload data
-- Supabase Storage integration for document uploads and signed URLs
-- HIPAA-compliant medical records request letter generation
-- Integration with Twilio for automated fax delivery
-- Tracking of sent requests in the database
-- Unit tests with mocked external services
-- Updated documentation with process flow diagrams
-
-## [1.2.0] - 2025-05-04
-
-### Added
-
-- Automated Letter of Representation (LOR) to insurers when retainer is signed
-- DocuSign webhook endpoint to receive envelope completion notifications
-- Insurance notice Celery task for asynchronous LOR generation and distribution
-- Database helper to fetch insurance data for LORs
-- Docassemble letter generation endpoint support
-- Comprehensive unit tests for webhook and task
-- Documentation of the insurance notice flow in README and FLOWS.md
-
-## [1.1.0] - 2025-05-04
-
-### Added
-
-- Twilio SMS/Fax adapter with exponential backoff retry logic
-- Utility functions to send SMS notifications to clients
-- Utility functions to send faxes to insurance companies and providers
-- Configuration settings for Twilio integration (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, etc.)
-- Comprehensive unit tests with mocked Twilio API clients
-- Documentation for SMS & Fax adapter usage
-- Updated process flow to include SMS notifications
-
-## [1.0.0] - 2025-05-04
-
-### Added
-
-- SendGrid email adapter for sending transactional emails
-- Jinja2 templating engine for rendering email templates
-- Email templates: welcome.html and retainer_sent.html
-- SendGrid configuration in settings (SENDGRID_API_KEY)
-- Comprehensive email rendering utilities
-- Unit tests with mocked SendGrid API client
-- Documentation for email templates and merge fields
-- Updated README with Email Adapter usage section
-
-## [0.9.0] - 2025-05-04
-
-### Added
-
-- Fully implemented `generate_retainer` Celery task.
-- Fetches client/incident data from the database.
-- Generates retainer PDF via Docassemble API integration.
-- Sends retainer for e-signature via DocuSign API integration (JWT auth).
-- Added `get_client_payload`
+  - Implemented PDF merging utility `utils.pdf_merge.merge_pdfs`

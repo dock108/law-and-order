@@ -2,6 +2,7 @@
 
 [![Backend CI](https://github.com/law-and-order/pi-auto/actions/workflows/backend.yml/badge.svg)](https://github.com/law-and-order/pi-auto/actions/workflows/backend.yml)
 [![Frontend CI](https://github.com/law-and-order/pi-auto/actions/workflows/frontend.yml/badge.svg)](https://github.com/law-and-order/pi-auto/actions/workflows/frontend.yml)
+[![Contract Tests](https://github.com/law-and-order/pi-auto/actions/workflows/contract-tests.yml/badge.svg)](https://github.com/law-and-order/pi-auto/actions/workflows/contract-tests.yml)
 
 <!--
 API docs badge only displays in production environments to avoid 404 errors in preview environments
@@ -9,6 +10,8 @@ API docs badge only displays in production environments to avoid 404 errors in p
 -->
 
 A comprehensive set of tools for automating personal injury case management and workflows.
+
+👉 **New here? See the [Developer Getting Started Guide](docs/DEVELOPMENT.md)**
 
 ## Requirements
 

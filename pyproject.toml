@@ -48,6 +48,7 @@ isort = "^5.12.0"
 ruff = "^0.1.11"
 pre-commit = "^3.5.0"
 requests = "^2.32.3"
+schemathesis = {extras = ["pytest"], version = "^3.32.0"}
 
 [tool.poetry.scripts]
 pi-auto-api = "pi_auto_api.main:app"
@@ -68,6 +69,8 @@ asyncio_mode = "auto"
 markers = [
     "asyncio: mark test as an asyncio test",
     "integration: mark test as an integration test",
+    "template_guard: mark test as a template guard test",
+    "contract: mark test as a contract test (API vs SDK)",
 ]
 
 [tool.black]
