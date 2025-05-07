@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2025-05-07
+
+### Added
+
+- **CI Template Guard**: Implemented a CI job (`Template Guard`) that runs as part of the test suite (`pytest -m template_guard`).
+  - Moved PII check logic from `scripts/check_templates.py` to `tests/template_guard.py`.
+  - Enhanced guard to fail on:
+    - Potential PII (Names, Phones, Dates, SSNs) using regex.
+    - Unwrapped dollar amounts (e.g., `$100` outside `{{ }}`).
+    - Empty Jinja tags (`{{ }}`).
+    - Undefined Jinja tags (not found in `docs/TEMPLATE_REFERENCE.md`).
+  - Added test `tests/template_guard.py::test_guard_catches_violations` to verify guard logic using a temporary bad template.
+  - Updated CI workflow (`.github/workflows/ci.yml`) to run the guard before main tests.
+  - Updated `README.md` with instructions for the template guard.
+
+### Removed
+
+- Deleted old script `scripts/check_templates.py`.
+- Removed corresponding `check-templates` hook from `.pre-commit-config.yaml`.
+
 ## [2.3.0] - 2025-05-07
 
 ### Added

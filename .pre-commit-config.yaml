@@ -49,18 +49,8 @@ repos:
     hooks:
       - id: pytest
         name: pytest
-        entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && poetry install --no-root --sync && poetry run pytest --no-cov-on-fail --no-cov'
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && poetry install --no-root --sync && poetry run pytest --cov-report= --no-cov-on-fail'
         language: system
         pass_filenames: false
         always_run: true
         require_serial: true
-
-  - repo: local
-    hooks:
-      - id: check-templates
-        name: check-templates
-        entry: python scripts/check_templates.py
-        language: python
-        pass_filenames: false
-        always_run: true
-        stages: [pre-commit]

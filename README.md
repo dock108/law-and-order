@@ -469,6 +469,26 @@ To verify that templates do not contain any personally identifiable information 
 python scripts/check_templates.py
 ```
 
+### Template Guard (CI)
+
+A dedicated CI job automatically checks templates for potential issues before code can be merged into `main`.
+This helps prevent accidental PII leaks and ensures template consistency.
+
+The guard fails if any file in `templates/` or `email_templates/` contains:
+
+- **Potential PII**: Hard-coded names (e.g., `John Doe`), phone numbers (e.g., `555-123-4567`), specific date formats (e.g., `01/01/2024`), or SSNs (e.g., `123-45-6789`).
+- **Unwrapped Dollar Amounts**: Currency values like `$100.00` that are not enclosed within Jinja tags (e.g., `{{ amount }}`).
+- **Empty Merge Fields**: Placeholders like `{{ }}` or `{{}}` (with optional whitespace).
+- **Undefined Jinja Tags**: Any tag like `{{ client.non_existent_field }}` that is not defined in `docs/TEMPLATE_REFERENCE.md`.
+
+To run the guard locally:
+
+```bash
+poetry run pytest -m template_guard
+```
+
+If the guard fails, it will print the file path, line number, violation type, and the problematic text. Update the template or the `docs/TEMPLATE_REFERENCE.md` file as needed to resolve the issue.
+
 ## Database
 
 This project uses PostgreSQL with Supabase for data storage. The database schema includes the following tables:

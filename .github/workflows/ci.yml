@@ -110,6 +110,15 @@ jobs:
           source .venv/bin/activate
           poetry run python scripts/export_openapi.py --check
 
+      # Add Template Guard step before other tests
+      - name: Template Guard
+        run: |
+          source .venv/bin/activate
+          poetry run pytest -m template_guard
+        env:
+          # Ensure env vars are available if tests depend on them, although guard shouldn't
+          PYTHONPATH: src
+
       - name: Wait for PostgreSQL to be ready
         run: |
           echo "Waiting for PostgreSQL..."
