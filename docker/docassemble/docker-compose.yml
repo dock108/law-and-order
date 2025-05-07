@@ -19,7 +19,7 @@ services:
       - SMTP_PASSWORD=${SMTP_PASSWORD:-}
       - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER:-no-reply@example.com}
     ports:
-      - "8100:8080"
+      - '8100:8080'
     volumes:
       - ./../../templates:/usr/share/docassemble/files/templates
     depends_on:

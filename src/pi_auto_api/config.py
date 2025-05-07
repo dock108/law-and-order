@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     DOCASSEMBLE_URL: str = "http://localhost:5000"  # Default to local dev server
 
     # CORS settings
-    ALLOWED_ORIGINS: str = "*"  # Default to allow all origins in dev
+    ALLOWED_ORIGINS: str = "http://localhost:3000"  # Default to allow frontend dev
 
     # Redis settings
     REDIS_URL: str = "redis://redis:6379/0"  # Default to Redis container
@@ -91,11 +91,17 @@ class Settings(BaseSettings):
         Returns:
             List of origins
         """
-        if isinstance(v, str) and not v.startswith("["):
+        if isinstance(v, str):
+            # Handle the special case "*"
+            if v == "*":
+                return ["*"]
+            # Split comma-separated string
             return [origin.strip() for origin in v.split(",") if origin]
-        if isinstance(v, str) and v == "*":
-            return ["*"]
-        return v
+        # If it's already a list (e.g., from a non-env source), return as is
+        elif isinstance(v, list):
+            return v
+        # Raise error for unexpected types
+        raise ValueError("ALLOWED_ORIGINS must be a comma-separated string or a list")
 
 
 # Create a global settings instance

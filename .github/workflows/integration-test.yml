@@ -54,7 +54,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -179,10 +179,10 @@ jobs:
             junit-report.xml
             coverage.xml
           retention-days: 7
-        if: always()  # Upload even if tests fail
+        if: always() # Upload even if tests fail
 
       - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: junit-report.xml
-        if: always()  # Publish even if tests fail
+        if: always() # Publish even if tests fail

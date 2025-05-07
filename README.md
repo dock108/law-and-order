@@ -100,7 +100,7 @@ The PI Automation API provides a RESTful interface for managing personal injury 
 SUPABASE_URL=postgresql://user:password@localhost:5432/dbname
 SUPABASE_KEY=your-supabase-key
 DOCASSEMBLE_URL=http://localhost:5000
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
+ALLOWED_ORIGINS=http://localhost:3000
 ```
 
 2. Start the API server:
@@ -110,6 +110,14 @@ poetry run uvicorn pi_auto_api.main:app --reload
 ```
 
 3. Access the API documentation at http://localhost:8000/docs
+
+### CORS Configuration
+
+Cross-Origin Resource Sharing (CORS) is configured via the `ALLOWED_ORIGINS` environment variable. Provide a comma-separated list of allowed origins. Example for local development and a production frontend:
+
+```bash
+ALLOWED_ORIGINS=http://localhost:3000,https://app.yourdomain.com
+```
 
 4. Health endpoints:
 

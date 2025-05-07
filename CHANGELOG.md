@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-05-07
+
+### Added
+
+- Environment variable `ALLOWED_ORIGINS` (default `http://localhost:3000`) to control CORS.
+- CORS middleware in `main.py` using `ALLOWED_ORIGINS` setting.
+- Unit tests (`tests/test_cors.py`) for CORS pre-flight and standard requests from allowed/disallowed origins.
+- Updated `README.md` with CORS configuration details.
+
 ## [2.0.0] - 2025-05-07
 
 ### Added
