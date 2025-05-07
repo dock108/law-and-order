@@ -4,47 +4,70 @@ from pathlib import Path
 
 import pytest
 import yaml
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 from openapi_spec_validator import validate
 
-from pi_auto_api.main import app
+from pi_auto.db.models import Staff
 
-client = TestClient(app)
+from .test_auth_login import TEST_STAFF_EMAIL, TEST_STAFF_PASSWORD
 
-# Define the routes and their expected non-SSE status codes
-STUB_ROUTES_NON_SSE = [
-    ("GET", "/api/cases", 501),
-    ("GET", "/api/cases/testcaseid", 501),
-    ("POST", "/api/cases/testcaseid/advance", 501),
-    ("GET", "/api/tasks", 501),
-    ("POST", "/api/tasks", 501),
-    ("PATCH", "/api/tasks/testtaskid", 501),
-    ("DELETE", "/api/tasks/testtaskid", 501),
-    ("POST", "/api/tasks/bulk-complete", 501),
-    ("GET", "/api/documents", 501),
-    ("POST", "/api/documents/testdocid/send", 501),
+# Define the routes to test (path only)
+STUB_ROUTES = [
+    ("GET", "/api/cases"),
+    ("GET", "/api/cases/testcaseid"),
+    ("POST", "/api/cases/testcaseid/advance"),
+    ("GET", "/api/tasks"),
+    ("POST", "/api/tasks"),
+    ("PATCH", "/api/tasks/testtaskid"),
+    ("DELETE", "/api/tasks/testtaskid"),
+    ("POST", "/api/tasks/bulk-complete"),
+    ("GET", "/api/documents"),
+    ("POST", "/api/documents/testdocid/send"),
 ]
 
-# SSE route
-SSE_ROUTE = ("GET", "/api/events/stream", 501)
+# SSE route - may or may not need auth
+SSE_ROUTE = ("GET", "/api/events/stream")
 
 
-@pytest.mark.parametrize("method, path, expected_status", STUB_ROUTES_NON_SSE)
-def test_stub_routes_return_501(method: str, path: str, expected_status: int):
-    """Test that non-SSE stub routes return 501 Not Implemented."""
-    response = client.request(method, path)
-    assert response.status_code == expected_status
-    if response.status_code == 501:  # Should always be true for these tests
-        assert response.json() == {"detail": "Not implemented"}
+@pytest.mark.asyncio
+@pytest.mark.parametrize("method, path", STUB_ROUTES)
+async def test_stub_routes_require_auth(
+    async_client: AsyncClient, method: str, path: str
+):
+    """Test that stub routes return 401 without authentication."""
+    response = await async_client.request(method, path)
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Not authenticated"
 
 
-def test_sse_event_stream_returns_501():
+@pytest.mark.asyncio
+@pytest.mark.parametrize("method, path", STUB_ROUTES)
+async def test_stub_routes_return_501_with_auth(
+    async_client: AsyncClient, test_staff_user: Staff, method: str, path: str
+):
+    """Test that stub routes return 501 when authenticated."""
+    # Log in the test user
+    login_response = await async_client.post(
+        "/auth/login", json={"email": TEST_STAFF_EMAIL, "password": TEST_STAFF_PASSWORD}
+    )
+    assert login_response.status_code == 200
+    token = login_response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Make request to the stub route with auth header
+    response = await async_client.request(method, path, headers=headers)
+    assert response.status_code == 501
+    assert response.json() == {"detail": "Not implemented"}
+
+
+# Test for SSE route (assuming it remains unprotected for now)
+@pytest.mark.asyncio
+async def test_sse_event_stream_returns_501(async_client: AsyncClient):
     """Test that the SSE event stream stub route returns 501 Not Implemented."""
-    method, path, expected_status = SSE_ROUTE
-    response = client.request(method, path)
-    assert response.status_code == expected_status
-    if response.status_code == 501:  # Should always be true for this test
-        assert response.text == ""
+    method, path = SSE_ROUTE
+    response = await async_client.request(method, path)
+    assert response.status_code == 501
+    assert response.text == ""
 
 
 def test_openapi_spec_is_valid():
@@ -56,5 +79,4 @@ def test_openapi_spec_is_valid():
         spec_content = yaml.safe_load(f)
 
     # Validate the spec content
-    # The validate function from openapi_spec_validator is used here.
     validate(spec_content)

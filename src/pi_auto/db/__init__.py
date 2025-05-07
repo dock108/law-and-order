@@ -15,7 +15,7 @@ from pi_auto.db.engine import (
     execute_transaction,
     get_connection_pool,
 )
-from pi_auto.db.models import Client, Doc, Incident, Insurance, Provider, Task
+from pi_auto.db.models import Base, Client, Doc, Incident, Insurance, Provider, Task
 
 __all__ = [
     # Engine functions
@@ -32,6 +32,7 @@ __all__ = [
     "get_client_with_incidents",
     "get_client_full_case",
     # Models
+    "Base",
     "Client",
     "Incident",
     "Insurance",

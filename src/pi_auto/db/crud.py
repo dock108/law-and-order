@@ -8,10 +8,10 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import delete
 from sqlalchemy.sql import update as sql_update
 
-from pi_auto.db.models import Client, Doc, Incident, Insurance, Provider, Task
+from pi_auto.db.models import Client, Doc, Incident, Insurance, Provider, Staff, Task
 
 # Type variable for generic model operations
-T = TypeVar("T", Client, Incident, Insurance, Provider, Doc, Task)
+T = TypeVar("T", Client, Incident, Insurance, Provider, Doc, Task, Staff)
 
 
 async def create(
@@ -159,4 +159,19 @@ async def get_client_full_case(
         )
     )
     result = await session.execute(stmt)
+    return result.scalars().first()
+
+
+# Staff-specific operations
+async def get_staff_by_email(session: AsyncSession, email: str) -> Optional[Staff]:
+    """Get a staff member by email.
+
+    Args:
+        session: The database session
+        email: The staff member's email
+
+    Returns:
+        The Staff instance or None if not found
+    """
+    result = await session.execute(select(Staff).where(Staff.email == email))
     return result.scalars().first()

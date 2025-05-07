@@ -4,12 +4,45 @@ info:
   description: API for automating personal injury case management workflows
   version: 0.1.0
 paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login for staff access token
+      operationId: login_for_access_token_auth_login_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+      responses:
+        '200':
+          description: Successful login, returns JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLoginResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPError'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/cases:
     get:
       tags:
         - pi-workflow
       summary: List Cases
       operationId: list_cases_api_cases_get
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Successful Response
@@ -22,6 +55,8 @@ paths:
         - pi-workflow
       summary: Get Case Detail
       operationId: get_case_detail_api_cases__caseId__get
+      security:
+        - BearerAuth: []
       parameters:
         - name: caseId
           in: path
@@ -47,6 +82,8 @@ paths:
         - pi-workflow
       summary: Advance Case Stage
       operationId: advance_case_stage_api_cases__caseId__advance_post
+      security:
+        - BearerAuth: []
       parameters:
         - name: caseId
           in: path
@@ -72,6 +109,8 @@ paths:
         - pi-workflow
       summary: List Tasks
       operationId: list_tasks_api_tasks_get
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Successful Response
@@ -83,6 +122,8 @@ paths:
         - pi-workflow
       summary: Create Task
       operationId: create_task_api_tasks_post
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Successful Response
@@ -95,6 +136,8 @@ paths:
         - pi-workflow
       summary: Update Task
       operationId: update_task_api_tasks__taskId__patch
+      security:
+        - BearerAuth: []
       parameters:
         - name: taskId
           in: path
@@ -119,6 +162,8 @@ paths:
         - pi-workflow
       summary: Delete Task
       operationId: delete_task_api_tasks__taskId__delete
+      security:
+        - BearerAuth: []
       parameters:
         - name: taskId
           in: path
@@ -144,6 +189,8 @@ paths:
         - pi-workflow
       summary: Mark Many Tasks Done
       operationId: mark_many_tasks_done_api_tasks_bulk_complete_post
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Successful Response
@@ -156,6 +203,8 @@ paths:
         - pi-workflow
       summary: List Documents
       operationId: list_documents_api_documents_get
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Successful Response
@@ -168,6 +217,8 @@ paths:
         - pi-workflow
       summary: Send Document
       operationId: send_document_api_documents__docId__send_post
+      security:
+        - BearerAuth: []
       parameters:
         - name: docId
           in: path
@@ -553,3 +604,43 @@ components:
         - msg
         - type
       title: ValidationError
+    AuthLoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        password:
+          type: string
+          title: Password
+      title: AuthLoginRequest
+    AuthLoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        token_type:
+          type: string
+          default: bearer
+          title: Token Type
+      title: AuthLoginResponse
+      required:
+        - access_token
+        - token_type
+    HTTPError:
+      type: object
+      properties:
+        detail:
+          type: string
+          title: Detail
+      title: HTTPError
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

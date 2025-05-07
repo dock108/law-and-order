@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     """Application settings.
 
     Attributes:
+        DATABASE_URL: Connection URL for SQLAlchemy async
         SUPABASE_URL: URL of the Supabase instance
         SUPABASE_KEY: API key for Supabase
         DOCASSEMBLE_URL: URL of the Docassemble API
@@ -33,12 +34,20 @@ class Settings(BaseSettings):
         TWILIO_AUTH_TOKEN: Twilio Auth Token
         TWILIO_SMS_FROM: Phone number to send SMS from
         TWILIO_FAX_FROM: Phone number to send faxes from
+        JWT_SECRET: Secret key for JWT
+        JWT_EXP_MINUTES: Expiration time for JWT in minutes
     """
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
+    # General settings
+    # ... (other settings)
+
     # Database settings
-    SUPABASE_URL: Optional[str] = None
+    DATABASE_URL: str = (
+        "postgresql+asyncpg://user:password@localhost:5432/pi_auto_db"  # Default DB
+    )
+    SUPABASE_URL: Optional[str] = None  # For asyncpg pool if still used separately
     SUPABASE_KEY: Optional[str] = None
 
     # Docassemble settings
@@ -65,6 +74,10 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: Optional[str] = None
     TWILIO_SMS_FROM: Optional[str] = None
     TWILIO_FAX_FROM: Optional[str] = None
+
+    # JWT settings for Staff Authentication
+    JWT_SECRET: Optional[str] = None
+    JWT_EXP_MINUTES: int = 60
 
     @field_validator("DOCUSIGN_PRIVATE_KEY")
     @classmethod

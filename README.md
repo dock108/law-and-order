@@ -146,9 +146,50 @@ ALLOWED_ORIGINS=http://localhost:3000,https://app.yourdomain.com
      }'
    ```
 
-### Nightly Medical-Records Request
+### Staff Authentication
 
-The system automatically generates and faxes HIPAA-compliant medical records requests to outstanding healthcare providers every night at 2:00 AM Eastern Time.
+Staff members (paralegals, lawyers) can authenticate to the API using a JWT-based login flow.
+
+**1. Login Endpoint:**
+
+To obtain an access token, `POST` to the `/auth/login` endpoint with the staff member's email and password:
+
+```bash
+curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "staff.member@example.com",
+    "password": "yoursecurepassword"
+  }'
+```
+
+**Response (Success - 200 OK):**
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+
+**Response (Failure - 401 Unauthorized):**
+
+```json
+{
+  "detail": "Incorrect email or password"
+}
+```
+
+**2. Accessing Protected Routes:**
+
+Once authenticated, include the `access_token` in the `Authorization` header as a Bearer token for requests to protected API endpoints:
+
+```bash
+curl -X GET http://localhost:8000/api/cases \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+If the token is missing, expired, or invalid, the API will respond with a `401 Unauthorized` error.
 
 ```mermaid
 sequenceDiagram

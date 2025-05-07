@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 
 from pi_auto_api.config import settings
 from pi_auto_api.db import create_intake
-from pi_auto_api.routers import pi_workflow
+from pi_auto_api.routers import auth, pi_workflow
 from pi_auto_api.schemas import (
     DocuSignWebhookPayload,
     FinalizeSettlementPayload,
@@ -112,6 +112,13 @@ app.include_router(
     pi_workflow.router,
     prefix="/api",
     tags=["pi-workflow"],
+)
+
+# Include the auth router
+app.include_router(
+    auth.router,
+    prefix="/auth",
+    tags=["Authentication"],
 )
 
 

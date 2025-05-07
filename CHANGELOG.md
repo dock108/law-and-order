@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [2.2.0] - 2025-05-07
+
+### Added
+
+- Staff JWT-based authentication flow.
+  - `Staff` SQLAlchemy model with `first_name`, `last_name`, `email`, `hashed_password`, `is_active`, `is_superuser`, `created_at`, `updated_at` fields, and a `full_name` hybrid property.
+  - `JWT_SECRET` and `JWT_EXP_MINUTES` settings in `config.py` and `.env.sample`.
+  - Auth helpers in `src/pi_auto_api/auth.py`:
+    - `create_access_token` for generating HS256 JWTs.
+    - `verify_password` and `get_password_hash` using `passlib[bcrypt]`.
+    - `get_current_staff` FastAPI dependency to authenticate users via Bearer token.
+  - `/auth/login` API endpoint (`POST`) for staff to log in with email and password, returning an access token.
+  - Protected existing stub routes in `pi_workflow.py` (`/api/cases`, `/api/tasks`, `/api/documents`) using the `get_current_staff` dependency.
+  - Unit tests in `tests/test_auth_login.py` covering successful login, inactive user login, wrong password, non-existent user, and protected route access (with and without token).
+  - Updated `openapi/pi-workflow.yaml` with:
+    - `AuthLoginRequest` and `AuthLoginResponse` schemas.
+    - `HTTPError` schema for generic error responses.
+    - `BearerAuth` security scheme (JWT).
+    - `/auth/login` path definition.
+    - Applied `BearerAuth` security to all `/api/*` pi-workflow routes.
+  - Regenerated TypeScript client SDK (`pnpm run gen:client`).
+  - Updated `README.md` with a "Staff Authentication" section and `curl` examples.
+
+### Fixed
+
+- Corrected import paths in `src/pi_auto_api/auth.py` to align with project structure (`pi_auto` vs `pi_auto_api` packages).
+- Ensured `get_staff_by_email` in `src/pi_auto/db/crud.py` is `async` and updated `auth.py` to use `AsyncSession` and `await` accordingly.
+
+### Known Issues
+
+- **Alembic Migration for `staff` table**: The generation of the Alembic migration for the `staff` table is currently blocked by a persistent "Can't locate revision identified by '0001'" error. This needs to be resolved by ensuring the target database (as per `sqlalchemy.url`) is clean from Alembic's perspective (e.g., no stale `alembic_version` table or an empty one) before attempting `alembic revision --autogenerate` again. (Deliverable 1.1 pending this resolution).
+- **RLS Policies**: Row Level Security policies for existing tables (Deliverable 1.2) have been drafted conceptually but not yet implemented in an Alembic migration due to the above issue.
+
 ## [2.1.0] - 2025-05-07
 
 ### Added

@@ -5,6 +5,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     Date,
+    DateTime,
     ForeignKey,
     Integer,
     String,
@@ -12,9 +13,46 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.dialects.postgresql import JSON, TIMESTAMP
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
+
+
+class Staff(Base):
+    """Model representing a staff member for authentication and authorization."""
+
+    __tablename__ = "staff"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(100), unique=True, nullable=False, index=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    hashed_password = Column(String(255), nullable=False)
+    first_name = Column(String(100), nullable=True)
+    last_name = Column(String(100), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_superuser = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+    @hybrid_property
+    def full_name(self):
+        """Return the full name of the staff member."""
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        if self.first_name:
+            return self.first_name
+        if self.last_name:
+            return self.last_name
+        return None
+
+    def __repr__(self):
+        """Return a string representation of the Staff object."""
+        return (
+            f"<Staff(id={self.id}, username='{self.username}', email='{self.email}')>"
+        )
 
 
 class Client(Base):
