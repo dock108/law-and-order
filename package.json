@@ -1,6 +1,10 @@
 {
   "name": "pi-monorepo",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "gen:client": "openapi-typescript openapi/pi-workflow.yaml --output packages/api-client/index.ts --export-type default",
     "lint": "eslint . --ext .ts,.js --ignore-path .gitignore",

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - YYYY-MM-DD // TODO: Update Date
+
+### Added
+
+- **Mono-repo Restructuring**:
+  - Reshaped the project into a pnpm mono-repo with `apps/*` and `packages/*` workspaces.
+  - Scaffolded a Next.js 14 application in `apps/web` (TypeScript, ESLint, Tailwind, App Router, src directory).
+    - Includes a basic homepage (`src/app/page.tsx`) and a health check API route (`src/app/api/health/route.ts`).
+    - Configured `next.config.mjs` with `output: 'standalone'` and to transpile shared packages.
+  - Created a shared React component package `packages/ui` (`@pi-monorepo/ui`).
+    - Includes a simple `Button` component.
+  - Wired `apps/web` to import from `packages/ui` using TypeScript path aliases.
+  - Added Jest and React Testing Library to `apps/web` with a smoke test for the homepage.
+- **Path-Filtered GitHub Actions**:
+  - Renamed existing CI workflow to `backend.yml` and configured it to ignore paths related to `apps/`, `packages/ui/`, and `packages/api-client/`.
+  - Created a new `frontend.yml` workflow that runs on changes to `apps/web/**` or `packages/ui/**`.
+    - This workflow installs dependencies, lints, builds, and tests the `apps/web` application.
+
+### Changed
+
+- Updated root `package.json` to define pnpm workspaces.
+- Updated `README.md` with new directory structure, CI badges, and setup/run instructions for both backend and frontend.
+
 ## [2.4.0] - 2025-05-07
 
 ### Added

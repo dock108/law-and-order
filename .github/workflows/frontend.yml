@@ -1,0 +1,42 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: ['main']
+    paths:
+      - 'apps/web/**'
+      - 'packages/ui/**'
+  pull_request:
+    branches: ['main']
+    paths:
+      - 'apps/web/**'
+      - 'packages/ui/**'
+
+jobs:
+  lint-build-test:
+    runs-on: ubuntu-latest
+    name: Lint, Build & Test Frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8 # Match backend.yml or project standard
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Lint
+        run: pnpm -C apps/web lint
+
+      - name: Build
+        run: pnpm -C apps/web build
+
+      - name: Test
+        run: pnpm -C apps/web test

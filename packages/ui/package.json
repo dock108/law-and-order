@@ -1,0 +1,15 @@
+{
+  "name": "@pi-monorepo/ui",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.tsx",
+  "types": "./index.tsx",
+  "scripts": {},
+  "dependencies": {
+    "react": "^18"
+  },
+  "devDependencies": {
+    "@types/react": "^18",
+    "typescript": "^5"
+  }
+}

@@ -1,6 +1,7 @@
 # Personal Injury Automation
 
-[![CI](https://github.com/law-and-order/pi-auto/actions/workflows/ci.yml/badge.svg)](https://github.com/law-and-order/pi-auto/actions/workflows/ci.yml)
+[![Backend CI](https://github.com/law-and-order/pi-auto/actions/workflows/backend.yml/badge.svg)](https://github.com/law-and-order/pi-auto/actions/workflows/backend.yml)
+[![Frontend CI](https://github.com/law-and-order/pi-auto/actions/workflows/frontend.yml/badge.svg)](https://github.com/law-and-order/pi-auto/actions/workflows/frontend.yml)
 
 <!--
 API docs badge only displays in production environments to avoid 404 errors in preview environments
@@ -13,6 +14,31 @@ A comprehensive set of tools for automating personal injury case management and 
 
 - Python 3.11+
 - Poetry
+- pnpm (for frontend development)
+
+## Directory Structure
+
+```
+pi-auto/
+├── apps/
+│   └── web/        # Next.js 14 frontend application
+├── packages/
+│   ├── api-client/ # TypeScript SDK for the backend API
+│   └── ui/         # Shared React component library (e.g., Button, Form elements)
+├── src/
+│   └── pi_auto_api/  # FastAPI backend application
+├── tests/            # Python backend tests
+├── templates/        # Jinja templates for document generation
+├── openapi/          # OpenAPI specifications
+├── scripts/          # Utility scripts
+├── .github/workflows # GitHub Actions CI/CD workflows
+├── Dockerfile        # Docker configuration for the backend
+├── poetry.lock
+├── pyproject.toml
+├── pnpm-lock.yaml
+├── package.json      # Root pnpm workspace config
+└── README.md
+```
 
 ## Quick Start
 
@@ -23,23 +49,46 @@ git clone https://github.com/your-org/pi-auto.git
 cd pi-auto
 ```
 
-2. Install dependencies:
+2. Install all dependencies (Python backend and Node.js frontend):
 
 ```bash
-poetry install
+poetry install # Installs Python dependencies
+pnpm install   # Installs Node.js dependencies for all workspaces
 ```
 
-3. Activate the virtual environment:
+3. Activate the Python virtual environment:
 
 ```bash
 poetry shell
 ```
 
-4. Run tests:
+4. Run the development servers:
 
-```bash
-pytest
-```
+   Start the Next.js frontend (in a new terminal window/tab):
+
+   ```bash
+   pnpm -C apps/web dev
+   ```
+
+   Start the FastAPI backend API (in a new terminal window/tab, after `poetry shell`):
+
+   ```bash
+   poetry run uvicorn pi_auto_api.main:app --reload
+   ```
+
+5. Run tests:
+
+   Run Python backend tests:
+
+   ```bash
+   pytest
+   ```
+
+   Run Frontend tests (in a new terminal window/tab):
+
+   ```bash
+   pnpm -C apps/web test
+   ```
 
 ## API
 
