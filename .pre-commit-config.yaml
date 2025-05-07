@@ -9,6 +9,28 @@ repos:
         exclude: templates/.*\.yml$
       - id: check-added-large-files
 
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        stages: [pre-commit]
+        files: \.(?:ts|js|json|yaml|yml|md)$
+        exclude: \.lock$
+
+  #  - repo: https://github.com/pre-commit/mirrors-eslint
+  #    rev: v8
+  #    hooks:
+  #      - id: eslint
+  #        stages: [pre-commit]
+  #        files: \.(?:ts|js)$
+  #        args: [--fix]
+  #        additional_dependencies:
+  #          - eslint@^9.0.0
+  #          - "@typescript-eslint/parser@^8.0.0"
+  #          - "@typescript-eslint/eslint-plugin@^8.0.0"
+  #          - eslint-config-prettier
+  #          - eslint-plugin-prettier
+
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.11.8
     hooks:
@@ -17,11 +39,11 @@ repos:
       - id: ruff-format
         stages: [pre-commit]
 
-#  - repo: https://github.com/psf/black
-#    rev: 24.1.1
-#    hooks:
-#      - id: black
-#        stages: [pre-commit]
+  #  - repo: https://github.com/psf/black
+  #    rev: 24.1.1
+  #    hooks:
+  #      - id: black
+  #        stages: [pre-commit]
 
   - repo: local
     hooks:

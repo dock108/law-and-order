@@ -2,12 +2,53 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ['main']
   pull_request:
-    branches: [ "main" ]
+    branches: ['main']
 
 jobs:
+  client-sdk-sync:
+    runs-on: ubuntu-latest
+    name: Client SDK Sync
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Or your preferred LTS version
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8 # As specified in the prompt
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Generate API client
+        run: pnpm run gen:client
+
+      - name: Type check API client
+        run: pnpm tsc -p packages/api-client/tsconfig.json --noEmit
+
+      - name: Check formatting
+        run: pnpm run format:check
+
+      - name: Lint check
+        run: pnpm run lint
+
+      - name: Check for SDK drift
+        run: |
+          git diff --exit-code
+          if [ $? -ne 0 ]; then
+            echo "Error: API client drift detected. Run 'pnpm run gen:client' and commit changes."
+            exit 1
+          fi
+          echo "API client is up to date."
+
   test:
+    needs: client-sdk-sync # Ensure SDK sync runs first
     runs-on: ubuntu-latest
     # Service containers to run with `test`
     services:
@@ -36,117 +77,118 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-        installer-parallel: true
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
 
-    - name: Load cached venv
-      id: cached-poetry-dependencies
-      uses: actions/cache@v3
-      with:
-        path: .venv
-        key: venv-${{ runner.os }}-3.11-${{ hashFiles('**/poetry.lock') }}
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-3.11-${{ hashFiles('**/poetry.lock') }}
 
-    - name: Install dependencies
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction --no-root
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
 
-    - name: Install project
-      run: poetry install --no-interaction
+      - name: Install project
+        run: poetry install --no-interaction
 
-    - name: Check OpenAPI spec drift
-      run: |
-        source .venv/bin/activate
-        poetry run python scripts/export_openapi.py --check
+      - name: Check OpenAPI spec drift
+        run: |
+          source .venv/bin/activate
+          poetry run python scripts/export_openapi.py --check
 
-    - name: Wait for PostgreSQL to be ready
-      run: |
-        echo "Waiting for PostgreSQL..."
-        until pg_isready -h localhost -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB; do
-          sleep 1
-        done
-        echo "PostgreSQL is ready!"
-      env:
-        POSTGRES_USER: testuser
-        POSTGRES_PASSWORD: testpassword
-        POSTGRES_DB: testdb
-        PGPASSWORD: testpassword # psql command needs this env var
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          echo "Waiting for PostgreSQL..."
+          until pg_isready -h localhost -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB; do
+            sleep 1
+          done
+          echo "PostgreSQL is ready!"
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+          PGPASSWORD: testpassword # psql command needs this env var
 
-    - name: Start Celery worker in background
-      run: |
-        source .venv/bin/activate
-        # Start Celery worker in background
-        celery --app pi_auto_api.tasks:app worker --pool=solo -Q default -c 1 > celery.log 2>&1 &
-        echo "Celery worker started in background"
-      env:
-        SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
-        SUPABASE_KEY: dummy-key
-        DOCASSEMBLE_URL: http://localhost:5000
-        REDIS_URL: redis://localhost:6379/0
+      - name: Start Celery worker in background
+        run: |
+          source .venv/bin/activate
+          # Start Celery worker in background
+          celery --app pi_auto_api.tasks:app worker --pool=solo -Q default -c 1 > celery.log 2>&1 &
+          echo "Celery worker started in background"
+        env:
+          SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+          SUPABASE_KEY: dummy-key
+          DOCASSEMBLE_URL: http://localhost:5000
+          REDIS_URL: redis://localhost:6379/0
 
-    - name: Start Celery beat in background
-      run: |
-        source .venv/bin/activate
-        # Start Celery beat in background
-        celery --app pi_auto_api.tasks:app beat --loglevel=INFO --schedule /tmp/beat-schedule > celery_beat.log 2>&1 &
-        echo "Celery beat started in background"
-      env:
-        SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
-        SUPABASE_KEY: dummy-key
-        DOCASSEMBLE_URL: http://localhost:5000
-        REDIS_URL: redis://localhost:6379/0
+      - name: Start Celery beat in background
+        run: |
+          source .venv/bin/activate
+          # Start Celery beat in background
+          celery --app pi_auto_api.tasks:app beat --loglevel=INFO --schedule /tmp/beat-schedule > celery_beat.log 2>&1 &
+          echo "Celery beat started in background"
+        env:
+          SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+          SUPABASE_KEY: dummy-key
+          DOCASSEMBLE_URL: http://localhost:5000
+          REDIS_URL: redis://localhost:6379/0
 
-    - name: Run Alembic migrations
-      run: |
-        # Source the venv - adjust path if needed based on poetry config
-        source .venv/bin/activate
-        alembic upgrade head
-      env:
-        # Use the service container for migrations
-        SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
-        # SUPABASE_KEY is not strictly needed for direct DB connection but good practice
-        SUPABASE_KEY: dummy-key
+      - name: Run Alembic migrations
+        run: |
+          # Source the venv - adjust path if needed based on poetry config
+          source .venv/bin/activate
+          alembic upgrade head
+        env:
+          # Use the service container for migrations
+          SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+          # SUPABASE_KEY is not strictly needed for direct DB connection but good practice
+          SUPABASE_KEY: dummy-key
 
-    - name: Seed database
-      run: |
-        psql -h localhost -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB -a -f seed.sql
-      env:
-        POSTGRES_USER: testuser
-        POSTGRES_PASSWORD: testpassword
-        POSTGRES_DB: testdb
-        PGPASSWORD: testpassword # psql command needs this env var
+      - name: Seed database
+        run: |
+          psql -h localhost -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB -a -f seed.sql
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+          PGPASSWORD: testpassword # psql command needs this env var
 
-    - name: Run tests with coverage
-      run: |
-        # Source the venv
-        source .venv/bin/activate
-        # Run pytest with coverage and fail if below 80%
-        pytest --cov=src/pi_auto --cov-report=term-missing --cov-fail-under=80
-      env:
-        # Use the service container for tests
-        TEST_DATABASE_URL: postgresql+asyncpg://testuser:testpassword@localhost:5432/testdb
-        # Environment variables needed by the application/tests if they read .env
-        SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
-        SUPABASE_KEY: dummy-key
-        REDIS_URL: redis://localhost:6379/0
+      - name: Run tests with coverage
+        run: |
+          # Source the venv
+          source .venv/bin/activate
+          # Run pytest with coverage and fail if below 80%
+          pytest --cov=src/pi_auto --cov-report=term-missing --cov-fail-under=80
+        env:
+          # Use the service container for tests
+          TEST_DATABASE_URL: postgresql+asyncpg://testuser:testpassword@localhost:5432/testdb
+          # Environment variables needed by the application/tests if they read .env
+          SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+          SUPABASE_KEY: dummy-key
+          REDIS_URL: redis://localhost:6379/0
 
-    - name: Run pre-commit hooks
-      run: |
-        # Source the venv
-        source .venv/bin/activate
-        pre-commit run --all-files
+      - name: Run pre-commit hooks
+        run: |
+          # Source the venv
+          source .venv/bin/activate
+          pre-commit run --all-files
 
   fastapi:
+    needs: client-sdk-sync # Ensure SDK sync runs first
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -173,109 +215,110 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-        installer-parallel: true
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
 
-    - name: Install dependencies
-      run: poetry install --no-interaction
+      - name: Install dependencies
+        run: poetry install --no-interaction
 
-    - name: Start API in background
-      run: |
-        source .venv/bin/activate
-        # Start FastAPI in background
-        nohup uvicorn pi_auto_api.main:app --host 0.0.0.0 --port 9000 > api.log 2>&1 &
-        echo "API started on port 9000, waiting for it to be ready..."
-        # Wait for API to start
-        timeout 30 bash -c 'until curl -s http://localhost:9000/healthz; do sleep 1; done'
-      env:
-        SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
-        SUPABASE_KEY: dummy-key
-        DOCASSEMBLE_URL: http://localhost:5000
-        REDIS_URL: redis://localhost:6379/0
+      - name: Start API in background
+        run: |
+          source .venv/bin/activate
+          # Start FastAPI in background
+          nohup uvicorn pi_auto_api.main:app --host 0.0.0.0 --port 9000 > api.log 2>&1 &
+          echo "API started on port 9000, waiting for it to be ready..."
+          # Wait for API to start
+          timeout 30 bash -c 'until curl -s http://localhost:9000/healthz; do sleep 1; done'
+        env:
+          SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+          SUPABASE_KEY: dummy-key
+          DOCASSEMBLE_URL: http://localhost:5000
+          REDIS_URL: redis://localhost:6379/0
 
-    - name: Run API tests
-      run: |
-        source .venv/bin/activate
-        pytest tests/test_api_basic.py -v
-      env:
-        SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
-        SUPABASE_KEY: dummy-key
-        DOCASSEMBLE_URL: http://localhost:5000
-        REDIS_URL: redis://localhost:6379/0
+      - name: Run API tests
+        run: |
+          source .venv/bin/activate
+          pytest tests/test_api_basic.py -v
+        env:
+          SUPABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+          SUPABASE_KEY: dummy-key
+          DOCASSEMBLE_URL: http://localhost:5000
+          REDIS_URL: redis://localhost:6379/0
 
   docassemble:
+    needs: client-sdk-sync # Ensure SDK sync runs first
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-        installer-parallel: true
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
 
-    - name: Install dependencies
-      run: poetry install --no-interaction
+      - name: Install dependencies
+        run: poetry install --no-interaction
 
-    # Set up Docker Buildx for caching
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      # Set up Docker Buildx for caching
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-    # Cache Docker layers
-    - name: Cache Docker layers
-      uses: actions/cache@v3
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
+      # Cache Docker layers
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
-    - name: Start Docassemble
-      run: |
-        cd docker/docassemble
-        # Pull images with layer caching
-        docker pull jhpyle/docassemble:latest
-        docker pull postgres:13-alpine
-        # Start containers
-        docker compose up -d
-        echo "Waiting for Docassemble to start..."
-        sleep 30  # Give some initial time for containers to start
+      - name: Start Docassemble
+        run: |
+          cd docker/docassemble
+          # Pull images with layer caching
+          docker pull jhpyle/docassemble:latest
+          docker pull postgres:13-alpine
+          # Start containers
+          docker compose up -d
+          echo "Waiting for Docassemble to start..."
+          sleep 30  # Give some initial time for containers to start
 
-    - name: Check Docassemble health
-      run: |
-        source .venv/bin/activate
-        python scripts/health_docassemble.py --retries 15 --delay 10
+      - name: Check Docassemble health
+        run: |
+          source .venv/bin/activate
+          python scripts/health_docassemble.py --retries 15 --delay 10
 
-    - name: Check template volume mounting
-      run: |
-        mkdir -p templates
-        echo "Test template file" > templates/test.yml
-        docker exec docassemble ls -la /usr/share/docassemble/files/templates/
-        docker exec docassemble cat /usr/share/docassemble/files/templates/test.yml
-        if [ $? -ne 0 ]; then
-          echo "Template volume mounting failed"
-          exit 1
-        fi
+      - name: Check template volume mounting
+        run: |
+          mkdir -p templates
+          echo "Test template file" > templates/test.yml
+          docker exec docassemble ls -la /usr/share/docassemble/files/templates/
+          docker exec docassemble cat /usr/share/docassemble/files/templates/test.yml
+          if [ $? -ne 0 ]; then
+            echo "Template volume mounting failed"
+            exit 1
+          fi
 
-    - name: Stop Docassemble
-      if: always()
-      run: |
-        cd docker/docassemble
-        docker compose down
+      - name: Stop Docassemble
+        if: always()
+        run: |
+          cd docker/docassemble
+          docker compose down

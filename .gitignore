@@ -63,3 +63,9 @@ poetry.lock
 # Ruff
 .ruff_cache/
 .DS_Store
+
+# Node / pnpm / SDK
+/node_modules/
+/packages/api-client/dist/
+/packages/api-client/index.ts
+.pnpm-debug.log

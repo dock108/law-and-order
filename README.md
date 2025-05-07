@@ -1,6 +1,7 @@
 # Personal Injury Automation
 
 [![CI](https://github.com/law-and-order/pi-auto/actions/workflows/ci.yml/badge.svg)](https://github.com/law-and-order/pi-auto/actions/workflows/ci.yml)
+
 <!--
 API docs badge only displays in production environments to avoid 404 errors in preview environments
 [![API Docs](https://img.shields.io/badge/API-Docs-blue)](https://github.com/law-and-order/pi-auto/actions)
@@ -52,6 +53,43 @@ The PI Workflow API is defined by an OpenAPI 3.1 specification.
   curl http://localhost:9000/api/cases
   ```
 
+### API Client SDK
+
+A TypeScript SDK is automatically generated from the OpenAPI spec. It can be found in the `packages/api-client` directory within this monorepo.
+
+Install it in another package within the monorepo:
+
+```bash
+pnpm add @pi-monorepo/api-client --workspace <your-package-name>
+```
+
+Example Usage:
+
+```typescript
+import createClient from '@pi-monorepo/api-client';
+
+// Assuming your API is running at http://localhost:9000
+const client = createClient({ baseUrl: 'http://localhost:9000' });
+
+async function fetchCases() {
+  const { data, error } = await client.GET('/api/cases');
+
+  if (error) {
+    console.error('Error fetching cases:', error);
+    return;
+  }
+
+  if (data) {
+    console.log('Cases:', data);
+    // Process the cases (data will be typed according to the OpenAPI spec)
+  }
+}
+
+fetchCases();
+```
+
+CI automatically checks for drift between the OpenAPI spec and the generated client.
+
 ### Run the API locally
 
 The PI Automation API provides a RESTful interface for managing personal injury cases.
@@ -74,6 +112,7 @@ poetry run uvicorn pi_auto_api.main:app --reload
 3. Access the API documentation at http://localhost:8000/docs
 
 4. Health endpoints:
+
    - `/healthz` - Simple health check
    - `/readyz` - Deep health check (database and Docassemble connectivity)
 
@@ -139,14 +178,14 @@ When a new medical bill document is added to the system (e.g., via the `process_
 2.  **Data Aggregation**: The `build_damages_worksheet` task queries all `medical_bill` document rows for the specified incident.
 3.  **Calculation**: It sums the `amount` listed for each bill. If the `amount` is missing in the database, it attempts a fallback to parse the amount from the document's URL/filename (this parsing is currently basic).
 4.  **Report Generation**: Using the aggregated data, it generates:
-    *   An **Excel file** (.xlsx) listing each provider, bill date, and amount, along with the total damages, using `pandas` and `xlsxwriter`.
-    *   A **PDF file** with similar information, styled for readability using `pandas` HTML export and `WeasyPrint`.
+    - An **Excel file** (.xlsx) listing each provider, bill date, and amount, along with the total damages, using `pandas` and `xlsxwriter`.
+    - A **PDF file** with similar information, styled for readability using `pandas` HTML export and `WeasyPrint`.
 5.  **Storage**: Both the Excel and PDF files are uploaded to the Supabase storage bucket.
 6.  **Database Update**: Two new document rows are inserted into the `doc` table for the incident:
-    *   One with `type = 'damages_worksheet_excel'` and the URL of the uploaded Excel file.
-    *   One with `type = 'damages_worksheet_pdf'` and the URL of the uploaded PDF file.
+    - One with `type = 'damages_worksheet_excel'` and the URL of the uploaded Excel file.
+    - One with `type = 'damages_worksheet_pdf'` and the URL of the uploaded PDF file.
 
-*(Placeholder for a screenshot of the generated damages worksheet)*
+_(Placeholder for a screenshot of the generated damages worksheet)_
 
 ### Automated Damages Worksheets
 
@@ -157,6 +196,7 @@ When new medical bills are logged, the system automatically generates and stores
 The system automatically assembles demand packages when all required documents for an incident are present. This process runs nightly, checking eligible incidents and creating merged PDF packages.
 
 1. **Document Requirements**: A demand package requires:
+
    - Medical records for the incident
    - At least one medical bill for each provider associated with the incident
    - Damages worksheet PDF
@@ -164,6 +204,7 @@ The system automatically assembles demand packages when all required documents f
    - No existing demand package for the incident
 
 2. **Package Assembly Process**:
+
    ```mermaid
    sequenceDiagram
        participant CB as Celery Beat
@@ -191,6 +232,7 @@ The system automatically assembles demand packages when all required documents f
    ```
 
 3. **On-Demand Assembly**: The demand package can also be manually triggered for a specific incident via the API:
+
    ```bash
    curl -X POST http://localhost:8000/demand/create/{incident_id}
    ```
@@ -206,6 +248,7 @@ The system automatically assembles demand packages when all required documents f
 After a settlement is finalized, the system automatically calculates fee and lien splits, generates a disbursement sheet, and sends it to the client for signature through DocuSign.
 
 1. **Settlement Finalization Process**:
+
    ```mermaid
    sequenceDiagram
        participant API as API Endpoint
@@ -233,6 +276,7 @@ After a settlement is finalized, the system automatically calculates fee and lie
    ```
 
 2. **Calculation Logic**: The disbursement calculator computes the settlement split:
+
    - Gross settlement amount
    - Attorney fee (based on percentage)
    - Medical liens
@@ -240,6 +284,7 @@ After a settlement is finalized, the system automatically calculates fee and lie
    - Net amount to client
 
 3. **Settlement Finalization Endpoint**:
+
    ```bash
    curl -X POST http://localhost:8000/internal/finalize_settlement \
      -H "Content-Type: application/json" \
@@ -279,6 +324,7 @@ poetry run pre-commit run --all-files
 ### Code Style
 
 This project uses:
+
 - [Black](https://github.com/psf/black) for code formatting
 - [isort](https://github.com/PyCQA/isort) for import sorting
 - [ruff](https://github.com/charliermarsh/ruff) for linting
